@@ -25,7 +25,7 @@
 
         <div class="text-sm text-base-content/60 space-y-1">
             <p>Created {{ \Carbon\Carbon::parse($recipe->created_at)->diffForHumans() }}</p>
-            <p>By {{ $recipe->user?->name ?? 'Unknown' }}</p>
+            <p>By {{ $recipe->user?->first_name ?? 'Unknown' }}</p>
             <p>
                 @if ($recipe->cuisineType)
                     Cuisine: {{ $recipe->cuisineType->name }}

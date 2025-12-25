@@ -15,10 +15,14 @@
 
                     <fieldset class="fieldset w-full">
                         <x-form-field>
-                            <x-form-label>Name</x-form-label>
-                            <x-form-input type="text" name="name" placeholder="Name" required />
-                            <x-form-error name="name" />
-
+                            <x-form-label>First Name</x-form-label>
+                            <x-form-input type="text" name="first_name" placeholder="First Name" required />
+                            <x-form-error name="first_name" />
+                        </x-form-field>
+                                                <x-form-field>
+                            <x-form-label>Last Name</x-form-label>
+                            <x-form-input type="text" name="last_name" placeholder="Last Name" required />
+                            <x-form-error name="last_name" />
                         </x-form-field>
 
                         <x-form-field>

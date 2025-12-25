@@ -43,9 +43,9 @@
                 </div>
                 <p class="text-xs text-secondary mt-8">Don't have an account?</p>
 
-                <button class="btn btn-outline btn-secondary hover:scale-105 duration-300 w-full my-4">
+                <a href='/register' class="btn btn-outline btn-secondary hover:scale-105 duration-300 w-full my-4">
                     Register
-                </button>
+                </a>
 
 
 
