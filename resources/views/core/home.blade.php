@@ -11,7 +11,7 @@
                 <img src="https://img.daisyui.com/images/stock/photo-1565098772267-60af42b81ef2.webp"
                     class="rounded-box translate-x-10 translate-y-4 scale-95" />
                 <img src="https://img.daisyui.com/images/stock/photo-1559703248-dcaaec9fab78.webp"
-                    class="rounded-box translate-y-10 scale-90" />
+                    class="rounded-box translate-y-12  scale-90" />
             </div>
             {{-- <img src="https://img.taste.com.au/Nuk_HYNz/w720-h480-cfill-q80/taste/2018/01/healthy-chicken-chow-mein-134805-1.jpg"
                 class="max-w-sm rounded-lg shadow-2xl" /> --}}

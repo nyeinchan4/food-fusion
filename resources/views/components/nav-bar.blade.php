@@ -6,7 +6,7 @@
     <div class="flex-none">
         <ul class="menu menu-horizontal px-1 flex justify-center items-center gap-1">
             <li><x-nav-link href="/" :active="request()->is('/')">Home</x-nav-link></li>
-            <li><x-nav-link href="/collection" :active="request()->is('/collection')">Collection</x-nav-link></li>
+            <li><x-nav-link href="/recipes" :active="request()->is('/collection')">Collection</x-nav-link></li>
             <li><x-nav-link href="/community" :active="request()->is('/community')">Community</x-nav-link></li>
             <li><x-nav-link href="/contact" :active="request()->is('/contact')">Contact</x-nav-link></li>
             <li><x-nav-link href="/about" :active="request()->is('/about')">About</x-nav-link></li>
@@ -24,7 +24,7 @@
                 <li>
                     <x-nav-link class="btn" href="/register" :active="request()->is('register')">Register</x-nav-link>
                 </li>
-                <li> <button class="btn btn-primary" href="/login" :active="request()->is('login')">Login</button>
+                <li> <a class="btn btn-primary" href="/login" :active="request()->is('login')">Login</a>
                 </li>
             @endguest
 
