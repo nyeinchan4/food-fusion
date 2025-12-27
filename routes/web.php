@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\CommunityPostController;
 use App\Http\Controllers\ContactController;
+use App\Models\Recipe;
 
 Route::get('/', function () {
     return view('core.home');
@@ -18,6 +19,9 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::resource('contacts', ContactController::class)->except(['create', 'store'])
         ->names('admin.contacts');
 });
+
+$recipeCount = Recipe::count();
+Route::view('/about', 'about.index', compact('recipeCount'));
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register.form');
 Route::post('/register', [AuthController::class, 'register'])->name('register');

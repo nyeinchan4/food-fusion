@@ -6,7 +6,7 @@
     <div class="flex-none">
         <ul class="menu menu-horizontal px-1 flex justify-center items-center gap-1">
             <li><x-nav-link href="/" :active="request()->is('/')">Home</x-nav-link></li>
-            <li><x-nav-link href="/recipes" :active="request()->is('recipes')">Collection</x-nav-link></li>
+            <li><x-nav-link href="/recipes" :active="request()->is('recipes')">Recipes</x-nav-link></li>
             <li><x-nav-link href="/posts" :active="request()->is('posts')">Community</x-nav-link></li>
             <li><x-nav-link href="/contact" :active="request()->is('contact')">Contact</x-nav-link></li>
             <li><x-nav-link href="/about" :active="request()->is('about')">About</x-nav-link></li>

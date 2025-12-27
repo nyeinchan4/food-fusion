@@ -23,14 +23,6 @@
         @endif
 
 
-        @if (session('success'))
-            <div x-data="{ show: true }" x-show="show" x-transition
-                class="mb-4 flex items-center justify-between text-sm text-success">
-                <span>{{ session('success') }}</span>
-                <button @click="show = false" class="btn btn-xs btn-ghost">✕</button>
-            </div>
-        @endif
-
 
 
 
