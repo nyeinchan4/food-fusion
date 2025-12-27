@@ -11,11 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->enum('type', ['recipe', 'tip', 'experience'])->default('recipe');
             $table->string('title');
-            $table->text('description');
+            $table->text('content');
+            // $table->string('image_path')->nullable();
+            $table->timestamps();
         });
     }
 

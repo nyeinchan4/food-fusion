@@ -3,9 +3,20 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RecipeController;
+use App\Http\Controllers\CommunityPostController;
+use App\Http\Controllers\ContactController;
 
 Route::get('/', function () {
     return view('core.home');
+});
+Route::middleware('auth')->group(function () {
+    Route::resource('recipes', RecipeController::class)->except(['index', 'show']);
+    Route::resource('posts', CommunityPostController::class)->except(['index', 'show']);
+});
+
+Route::prefix('admin')->middleware('auth')->group(function () {
+    Route::resource('contacts', ContactController::class)->except(['create', 'store'])
+        ->names('admin.contacts');
 });
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register.form');
@@ -16,8 +27,15 @@ Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::resource('recipes', RecipeController::class)->only(['index', 'show', 'create']);
 
-Route::middleware('auth')->group(function () {
-    Route::resource('recipes', RecipeController::class)->except(['index', 'show']);
-});
+Route::get('/contact', [ContactController::class, 'create'])->name('contact.create');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+
+Route::resource('posts', CommunityPostController::class)->only(['index', 'show']);
+
+Route::resource('recipes', RecipeController::class)->only(['index', 'show']);
+
+
+
+
+

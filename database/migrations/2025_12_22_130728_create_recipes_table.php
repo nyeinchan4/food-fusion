@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId('dietary_type_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('difficulty_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamp('created_at')->useCurrent();
+            $table->boolean('is_community')->default(false); 
         });
 
     }

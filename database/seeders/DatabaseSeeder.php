@@ -16,15 +16,17 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory()->create([
-        //     'name' => 'Test User',
+        //     'first_name' => 'Test',
+        //     'last_name' => 'User',
         //     'email' => 'test@example.com',
-        //     'is_admin' => true,
+        //     'is_admin' => false,
         // ]);
 
         $this->call([
             CuisineTypeSeeder::class,
             DietaryTypeSeeder::class,
             DifficultySeeder::class,
+            UserSeeder::class
         ]);
     }
 }
