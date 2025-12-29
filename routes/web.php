@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\CommunityPostController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\ResourceController;
 use App\Models\Recipe;
 
 Route::get('/', function () {
@@ -39,6 +40,7 @@ Route::resource('posts', CommunityPostController::class)->only(['index', 'show']
 
 Route::resource('recipes', RecipeController::class)->only(['index', 'show']);
 
+Route::resource('resource', ResourceController::class)->only(['index', 'show']);
 
 
 

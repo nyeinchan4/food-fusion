@@ -17,7 +17,10 @@ return new class extends Migration
             $table->text('description');
             $table->foreignId('category_id')->constrained('resource_categories')->cascadeOnDelete();
             $table->string('file_path');
+            $table->string('file_type', 100);
             $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('updated_at')->useCurrent();
+
         });
 
     }

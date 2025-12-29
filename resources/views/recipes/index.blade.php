@@ -1,5 +1,5 @@
 <x-layout title="Recipes">
-    <div class="max-w-3xl mx-auto py-10 min-h-screen">
+    <div class="max-w-3xl mx-auto py-10">
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-3xl font-semibold">Recipes</h1>
             @auth

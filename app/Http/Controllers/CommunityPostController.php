@@ -7,7 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class   CommunityPostController extends Controller
+class CommunityPostController extends Controller
 {
     public function index(): View
     {
@@ -16,12 +16,12 @@ class   CommunityPostController extends Controller
             ->latest()
             ->get();
 
-        return view('posts.index', compact('posts'));
+        return view('community.posts.index', compact('posts'));
     }
 
     public function create(): View
     {
-        return view('posts.create');
+        return view('community.posts.create');
     }
 
     public function store(Request $request): RedirectResponse
@@ -40,7 +40,7 @@ class   CommunityPostController extends Controller
         ]);
 
         return redirect()
-            ->route('posts.index')
+            ->route('community.index')
             ->with('success', 'Post created.');
     }
 
@@ -48,7 +48,7 @@ class   CommunityPostController extends Controller
     {
         $post->load('user');
 
-        return view('posts.show', compact('post'));
+        return view('community.posts.show', compact('post'));
     }
 
     public function edit(Request $request, Post $post): View
@@ -59,7 +59,7 @@ class   CommunityPostController extends Controller
             abort(403);
         }
 
-        return view('posts.edit', compact('post'));
+        return view('community.posts.edit', compact('post'));
     }
 
     public function update(Request $request, Post $post): RedirectResponse
@@ -79,7 +79,7 @@ class   CommunityPostController extends Controller
         $post->update($validated);
 
         return redirect()
-            ->route('posts.index')
+            ->route('community.index')
             ->with('success', 'Post updated.');
     }
 
@@ -94,7 +94,7 @@ class   CommunityPostController extends Controller
         $post->delete();
 
         return redirect()
-            ->route('posts.index')
+            ->route('community.index')
             ->with('success', 'Post deleted.');
     }
 }

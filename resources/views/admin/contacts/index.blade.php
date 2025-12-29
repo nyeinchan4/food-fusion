@@ -1,5 +1,5 @@
 <x-layout title="Admin Contacts">
-    <div class="max-w-4xl min-h-screen mx-auto py-10">
+    <div class="max-w-4xl mx-auto py-10">
         <h1 class="text-3xl font-semibold mb-6">Contact messages</h1>
 
         @if (session('success'))

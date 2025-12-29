@@ -11,7 +11,7 @@
                         True food security depends on sustainable energy. By combining recipes with environmental
                         education, we empower our users to nourish themselves and the Earth simultaneously.
                     </p>
-                    <button class="btn btn-primary">Get Started</button>
+                    {{-- <button class="btn btn-primary">Get Started</button> --}}
                 </div>
             </div>
         </div>
