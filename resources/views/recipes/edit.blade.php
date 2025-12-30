@@ -2,7 +2,7 @@
     <div class="max-w-xl mx-auto py-10">
         <h1 class="text-3xl font-semibold mb-6">Edit recipe</h1>
 
-        <form method="POST" action="{{ route('recipes.update', $recipe) }}">
+        <form method="POST" action="{{ route('recipes.update', $recipe) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -17,6 +17,12 @@
                     <x-form-label>Description</x-form-label>
                     <textarea name="description" class="textarea textarea-bordered w-full" rows="6" required>{{ old('description', $recipe->description) }}</textarea>
                     <x-form-error name="description" />
+                </x-form-field>
+
+                <x-form-field>
+                    <x-form-label>Photo</x-form-label>
+                    <x-form-input type="file" name="image" accept="image/*" />
+                    <x-form-error name="image" />
                 </x-form-field>
 
                 <x-form-field>

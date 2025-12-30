@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\CommunityPostController;
@@ -21,7 +22,10 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         ->names('admin.contacts');
 });
 
-$recipeCount = Recipe::count();
+$recipeCount = 0;
+if (Schema::hasTable('recipes')) {
+    $recipeCount = Recipe::count();
+}
 Route::view('/about', 'about.index', compact('recipeCount'));
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register.form');
@@ -41,7 +45,6 @@ Route::resource('posts', CommunityPostController::class)->only(['index', 'show']
 Route::resource('recipes', RecipeController::class)->only(['index', 'show']);
 
 Route::resource('resource', ResourceController::class)->only(['index', 'show']);
-
 
 
 

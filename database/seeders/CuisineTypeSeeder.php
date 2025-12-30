@@ -10,7 +10,6 @@ class CuisineTypeSeeder extends Seeder
     public function run(): void
     {
         $names = [
-            'Burmese',
             'Italian',
             'Chinese',
             'Indian',

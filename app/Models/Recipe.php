@@ -16,6 +16,7 @@ class Recipe extends Model
         'user_id',
         'title',
         'description',
+        'image_path',
         'cuisine_type_id',
         'dietary_type_id',
         'difficulty_id',

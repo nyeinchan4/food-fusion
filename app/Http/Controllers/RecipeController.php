@@ -6,6 +6,7 @@ use App\Models\Recipe;
 use App\Models\CuisineType;
 use App\Models\DietaryType;
 use App\Models\Difficulty;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -36,13 +37,23 @@ class RecipeController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
+            'image' => ['nullable', 'image', 'max:2048'],
             'cuisine_type_id' => ['nullable', 'integer', 'exists:cuisine_types,id'],
             'dietary_type_id' => ['nullable', 'integer', 'exists:dietary_types,id'],
             'difficulty_id' => ['nullable', 'integer', 'exists:difficulties,id'],
         ]);
 
+        $imagePath = null;
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('recipes', 'public');
+        }
+
+        unset($validated['image']);
+
         Recipe::create([
             'user_id' => $request->user()?->id,
+            'image_path' => $imagePath,
             'title' => $validated['title'],
             'description' => $validated['description'],
             'cuisine_type_id' => $validated['cuisine_type_id'] ?? null,
@@ -82,6 +93,7 @@ class RecipeController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
+            'image' => ['nullable', 'image', 'max:2048'],
             'cuisine_type_id' => ['nullable', 'integer', 'exists:cuisine_types,id'],
             'dietary_type_id' => ['nullable', 'integer', 'exists:dietary_types,id'],
             'difficulty_id' => ['nullable', 'integer', 'exists:difficulties,id'],
@@ -92,6 +104,20 @@ class RecipeController extends Controller
         if (! $user || (! $user->is_admin && $user->id !== $recipe->user_id)) {
             abort(403);
         }
+
+        $imagePath = $recipe->image_path;
+
+        if ($request->hasFile('image')) {
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+
+            $imagePath = $request->file('image')->store('recipes', 'public');
+        }
+
+        unset($validated['image']);
+
+        $validated['image_path'] = $imagePath;
 
         $recipe->update($validated);
 

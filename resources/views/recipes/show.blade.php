@@ -1,5 +1,10 @@
 <x-layout title="{{ $recipe->title }}">
-    <div class="max-w-2xl mx-auto py-10 space-y-4">
+    <div class="max-w-2xl mx-auto py-10 space-y-4 px-4">
+        <div class="rounded-2xl overflow-hidden bg-base-200">
+            <img src="{{ $recipe->image_path ? asset('storage/' . $recipe->image_path) : 'https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp' }}"
+                alt="{{ $recipe->title }}" class="w-full h-64 object-cover" />
+        </div>
+
         <div class="flex items-center justify-between gap-4">
             <h1 class="text-3xl font-semibold">{{ $recipe->title }}</h1>
             @auth
@@ -25,22 +30,32 @@
 
         <div class="text-sm text-base-content/60 space-y-1">
             <p>Created {{ \Carbon\Carbon::parse($recipe->created_at)->diffForHumans() }}</p>
-            <p>By {{ $recipe->user?->first_name ?? 'Unknown' }}</p>
-            <p>
+            <p class="mt-4">By
+                <span class="badge badge-outline">
+                    {{ $recipe->user?->first_name ?? 'Unknown' }}
+                </span>
+            </p>
+            <p class="mt-4">
                 @if ($recipe->cuisineType)
-                    Cuisine: {{ $recipe->cuisineType->name }}
+                    Cuisine: <span class="badge badge-primary">
+                        {{ $recipe->cuisineType->name }}
+                    </span>
                 @endif
                 @if ($recipe->dietaryType)
                     @if ($recipe->cuisineType)
                         |
                     @endif
-                    Dietary: {{ $recipe->dietaryType->name }}
+                    Dietary: <span class="badge badge-secondary">
+                        {{ $recipe->dietaryType->name }}
+                    </span>
                 @endif
                 @if ($recipe->difficulty)
                     @if ($recipe->cuisineType || $recipe->dietaryType)
                         |
                     @endif
-                    Difficulty: {{ $recipe->difficulty->name }}
+                    Difficulty: <span class="badge badge-accent">
+                        {{ $recipe->difficulty->name }}
+                    </span>
                 @endif
             </p>
         </div>
