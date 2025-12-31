@@ -31,46 +31,74 @@
         @else
             <div class="space-y-4">
                 @foreach ($posts as $post)
-                    <article class="border border-base-300 rounded-lg p-4 flex flex-col gap-2">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="space-y-1">
-                                <a href="{{ route('posts.show', $post) }}"
-                                    class="link link-hover text-lg font-semibold">
-                                    {{ $post->title }}
-                                </a>
-                                <p class="text-xs uppercase tracking-wide text-base-content/60">
-                                    {{ ucfirst($post->type) }}
-                                </p>
-                            </div>
-                            <div class="text-xs text-base-content/60 text-right">
-                                <p>By {{ $post->user?->first_name }} {{ $post->user?->last_name }}</p>
-                                <p>{{ $post->created_at?->diffForHumans() }}</p>
-                            </div>
-                        </div>
-
-                        <p class="text-sm text-base-content/80 line-clamp-3">
-                            {{ \Illuminate\Support\Str::limit($post->content, 200) }}
-                        </p>
-
-                        @auth
-                            @php
-                                $canManage = auth()->user()->is_admin || auth()->id() === $post->user_id;
-                            @endphp
-                            @if ($canManage)
-                                <div class="flex gap-2 justify-end">
-                                    <a href="{{ route('posts.edit', $post) }}" class="btn btn-xs btn-outline">
-                                        Edit
+                    <article class="card bg-base-100 shadow-sm border border-base-200">
+                        <div class="card-body space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="space-y-1">
+                                    <a href="{{ route('posts.show', $post) }}"
+                                        class="link link-hover text-lg font-semibold">
+                                        {{ $post->title }}
                                     </a>
-                                    <form method="POST" action="{{ route('posts.destroy', $post) }}">
+                                    <p class="text-xs uppercase tracking-wide text-base-content/60">
+                                        {{ ucfirst($post->type) }}
+                                    </p>
+                                </div>
+                                <div class="text-xs text-base-content/60 text-right">
+                                    <p>By {{ $post->user?->first_name }} {{ $post->user?->last_name }}</p>
+                                    <p>{{ $post->created_at?->diffForHumans() }}</p>
+                                </div>
+                            </div>
+
+                            <p class="text-sm text-base-content/80 line-clamp-3">
+                                {{ \Illuminate\Support\Str::limit($post->content, 200) }}
+                            </p>
+
+                            <div class="mt-4 flex items-center justify-between text-xs text-base-content/60">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                        <span>{{ $post->likes_count }} likes</span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                        <span>{{ $post->comments_count }} comments</span>
+                                    </div>
+                                </div>
+                                @auth
+                                    <form method="POST"
+                                        action="{{ in_array($post->id, $likedPostIds ?? []) ? route('posts.unlike', $post) : route('posts.like', $post) }}">
                                         @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-xs btn-error" type="submit">
-                                            Delete
+                                        @if (in_array($post->id, $likedPostIds ?? []))
+                                            @method('DELETE')
+                                        @endif
+                                        <button type="submit"
+                                            class="btn btn-xs {{ in_array($post->id, $likedPostIds ?? []) ? 'btn-secondary' : 'btn-ghost' }}">
+                                            {{ in_array($post->id, $likedPostIds ?? []) ? 'Liked' : 'Like' }}
                                         </button>
                                     </form>
-                                </div>
-                            @endif
-                        @endauth
+                                @endauth
+                            </div>
+
+                            {{-- @auth
+                                @php
+                                    $canManage = auth()->user()->is_admin || auth()->id() === $post->user_id;
+                                @endphp
+                                @if ($canManage)
+                                    <div class="flex gap-2 justify-end">
+                                        <a href="{{ route('posts.edit', $post) }}" class="btn btn-xs btn-outline">
+                                            Edit
+                                        </a>
+                                        <form method="POST" action="{{ route('posts.destroy', $post) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-xs btn-error" type="submit">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            @endauth --}}
+                        </div>
                     </article>
                 @endforeach
             </div>

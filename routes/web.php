@@ -15,6 +15,9 @@ Route::get('/', function () {
 Route::middleware('auth')->group(function () {
     Route::resource('recipes', RecipeController::class)->except(['index', 'show']);
     Route::resource('posts', CommunityPostController::class)->except(['index', 'show']);
+    Route::post('posts/{post}/likes', [CommunityPostController::class, 'like'])->name('posts.like');
+    Route::delete('posts/{post}/likes', [CommunityPostController::class, 'unlike'])->name('posts.unlike');
+    Route::post('posts/{post}/comments', [CommunityPostController::class, 'comment'])->name('posts.comment');
 });
 
 Route::prefix('admin')->middleware('auth')->group(function () {
@@ -45,6 +48,5 @@ Route::resource('posts', CommunityPostController::class)->only(['index', 'show']
 Route::resource('recipes', RecipeController::class)->only(['index', 'show']);
 
 Route::resource('resource', ResourceController::class)->only(['index', 'show']);
-
 
 

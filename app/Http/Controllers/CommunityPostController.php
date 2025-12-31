@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\PostComment;
+use App\Models\PostLike;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
 
 class CommunityPostController extends Controller
 {
@@ -13,10 +16,21 @@ class CommunityPostController extends Controller
     {
         $posts = Post::query()
             ->with('user')
+            ->withCount(['comments', 'likes'])
             ->latest()
             ->get();
 
-        return view('community.posts.index', compact('posts'));
+        $likedPostIds = [];
+
+        if (Auth::check()) {
+            $likedPostIds = PostLike::query()
+                ->where('user_id', Auth::id())
+                ->whereIn('post_id', $posts->pluck('id'))
+                ->pluck('post_id')
+                ->all();
+        }
+
+        return view('community.posts.index', compact('posts', 'likedPostIds'));
     }
 
     public function create(): View
@@ -39,16 +53,34 @@ class CommunityPostController extends Controller
             'content' => $validated['content'],
         ]);
 
-        return redirect()
-            ->route('community.index')
-            ->with('success', 'Post created.');
+        return back(); // full reload, scroll resets
+
+        // return redirect()
+        //     ->route('posts.index')
+        //     ->with('success', 'Post created.');
     }
 
     public function show(Post $post): View
     {
         $post->load('user');
 
-        return view('community.posts.show', compact('post'));
+        $comments = $post->comments()
+            ->with('user')
+            ->latest()
+            ->get();
+
+        $likeCount = $post->likes()->count();
+        $commentCount = $post->comments()->count();
+
+        $likedByCurrentUser = false;
+
+        if (Auth::check()) {
+            $likedByCurrentUser = $post->likes()
+                ->where('user_id', Auth::id())
+                ->exists();
+        }
+
+        return view('community.posts.show', compact('post', 'comments', 'likeCount', 'commentCount', 'likedByCurrentUser'));
     }
 
     public function edit(Request $request, Post $post): View
@@ -79,7 +111,7 @@ class CommunityPostController extends Controller
         $post->update($validated);
 
         return redirect()
-            ->route('community.index')
+            ->route('posts.index')
             ->with('success', 'Post updated.');
     }
 
@@ -94,8 +126,48 @@ class CommunityPostController extends Controller
         $post->delete();
 
         return redirect()
-            ->route('community.index')
+            ->route('posts.index')
             ->with('success', 'Post deleted.');
     }
-}
 
+    public function like(Request $request, Post $post)
+    {
+        $user = $request->user();
+
+        PostLike::firstOrCreate([
+            'user_id' => $user->id,
+            'post_id' => $post->id,
+        ]);
+
+        return back();
+    }
+
+    public function unlike(Request $request, Post $post)
+    {
+        $user = $request->user();
+
+        PostLike::query()
+            ->where('user_id', $user->id)
+            ->where('post_id', $post->id)
+            ->delete();
+
+        return back();
+    }
+
+    public function comment(Request $request, Post $post): RedirectResponse
+    {
+        $validated = $request->validate([
+            'body' => ['required', 'string'],
+        ]);
+
+        $user = $request->user();
+
+        PostComment::create([
+            'post_id' => $post->id,
+            'user_id' => $user->id,
+            'body' => $validated['body'],
+        ]);
+
+        return back();
+    }
+}
