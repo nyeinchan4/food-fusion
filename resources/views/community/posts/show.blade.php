@@ -37,7 +37,7 @@
             <p>{{ $post->content }}</p>
         </div>
 
-        <div class="flex items-center justify-between text-xs text-base-content/60">
+        <div id="post-feedback" class="flex items-center justify-between text-xs text-base-content/60">
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
@@ -50,7 +50,7 @@
             </div>
             @auth
                 <form method="POST"
-                    action="{{ $likedByCurrentUser ? route('posts.unlike', $post) : route('posts.like', $post) }}">
+                    action="{{ $likedByCurrentUser ? route('posts.unlike', [$post, 'redirect' => 'show']) : route('posts.like', [$post, 'redirect' => 'show']) }}">
                     @csrf
                     @if ($likedByCurrentUser)
                         @method('DELETE')
@@ -63,7 +63,7 @@
             @endauth
         </div>
 
-        <div class="space-y-3">
+        <div id="comments" class="space-y-3">
             <h2 class="text-sm font-semibold">Comments</h2>
             @auth
                 <form method="POST" action="{{ route('posts.comment', $post) }}" class="space-y-2">

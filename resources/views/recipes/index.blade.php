@@ -16,16 +16,17 @@
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach ($recipes as $recipe)
-                    <div class="card bg-base-100 shadow-sm border border-base-200">
+                    <div class="transform transition-transform duration-300 hover:scale-105 card bg-base-100 shadow-sm border border-base-200 cursor-pointer"
+                        onclick="window.location='{{ route('recipes.show', $recipe) }}'">
                         <figure class="h-48 overflow-hidden">
                             <img src="{{ $recipe->image_path ? asset('storage/' . $recipe->image_path) : asset('assets/images/recipe-placeholder.jpg') }}"
                                 alt="{{ $recipe->title }}" class="w-full h-full object-cover" />
                         </figure>
                         <div class="card-body">
                             <h2 class="card-title">
-                                <a href="{{ route('recipes.show', $recipe) }}" class="link link-hover">
+                                <span>
                                     {{ $recipe->title }}
-                                </a>
+                                </span>
                                 @if ($recipe->created_at && \Carbon\Carbon::parse($recipe->created_at)->gt(now()->subDays(7)))
                                     <div class="badge badge-primary">{{ $recipe->cuisineType->name }}</div>
                                 @endif
@@ -46,7 +47,7 @@
                                     </div>
                                 @endif --}}
                                         @if ($recipe->dietaryType)
-                                            <div class="badge badge-soft badge-secondary">
+                                            <div class="badge badge-soft badge-secondary" onclick="event.stopPropagation();">
                                                 {{ $recipe->dietaryType->name }}
                                             </div>
                                         @endif

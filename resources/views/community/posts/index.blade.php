@@ -31,14 +31,15 @@
         @else
             <div class="space-y-4">
                 @foreach ($posts as $post)
-                    <article class="card bg-base-100 shadow-sm border border-base-200">
+                    <article id="post-{{ $post->id }}"
+                        class="transform transition-transform duration-300 hover:scale-105 card bg-base-100 shadow-sm border border-base-200 cursor-pointer"
+                        onclick="window.location='{{ route('posts.show', $post) }}'">
                         <div class="card-body space-y-3">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="space-y-1">
-                                    <a href="{{ route('posts.show', $post) }}"
-                                        class="link link-hover text-lg font-semibold">
+                                    <span class="text-lg font-semibold">
                                         {{ $post->title }}
-                                    </a>
+                                    </span>
                                     <p class="text-xs uppercase tracking-wide text-base-content/60">
                                         {{ ucfirst($post->type) }}
                                     </p>
@@ -66,7 +67,8 @@
                                 </div>
                                 @auth
                                     <form method="POST"
-                                        action="{{ in_array($post->id, $likedPostIds ?? []) ? route('posts.unlike', $post) : route('posts.like', $post) }}">
+                                        action="{{ in_array($post->id, $likedPostIds ?? []) ? route('posts.unlike', $post) : route('posts.like', $post) }}"
+                                        onclick="event.stopPropagation();">
                                         @csrf
                                         @if (in_array($post->id, $likedPostIds ?? []))
                                             @method('DELETE')

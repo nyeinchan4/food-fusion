@@ -139,7 +139,15 @@ class CommunityPostController extends Controller
             'post_id' => $post->id,
         ]);
 
-        return back();
+        if ($request->query('redirect') === 'show') {
+            return redirect()
+                ->route('posts.show', $post)
+                ->withFragment('post-feedback');
+        }
+
+        return redirect()
+            ->route('posts.index')
+            ->withFragment('post-' . $post->id);
     }
 
     public function unlike(Request $request, Post $post)
@@ -151,7 +159,15 @@ class CommunityPostController extends Controller
             ->where('post_id', $post->id)
             ->delete();
 
-        return back();
+        if ($request->query('redirect') === 'show') {
+            return redirect()
+                ->route('posts.show', $post)
+                ->withFragment('post-feedback');
+        }
+
+        return redirect()
+            ->route('posts.index')
+            ->withFragment('post-' . $post->id);
     }
 
     public function comment(Request $request, Post $post): RedirectResponse
@@ -168,6 +184,8 @@ class CommunityPostController extends Controller
             'body' => $validated['body'],
         ]);
 
-        return back();
+        return redirect()
+            ->route('posts.show', $post)
+            ->withFragment('comments');
     }
 }
