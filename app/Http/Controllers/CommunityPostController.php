@@ -53,11 +53,9 @@ class CommunityPostController extends Controller
             'content' => $validated['content'],
         ]);
 
-        return back(); // full reload, scroll resets
-
-        // return redirect()
-        //     ->route('posts.index')
-        //     ->with('success', 'Post created.');
+        return redirect()
+            ->route('posts.index')
+            ->with('success', 'Post created.');
     }
 
     public function show(Post $post): View

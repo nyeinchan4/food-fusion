@@ -32,7 +32,7 @@
             <div class="space-y-4">
                 @foreach ($posts as $post)
                     <article id="post-{{ $post->id }}"
-                        class="transform transition-transform duration-300 hover:scale-105 card bg-base-100 shadow-sm border border-base-200 cursor-pointer"
+                        class="transform transition-transform duration-300 hover:scale-102 card bg-base-100 shadow-sm border border-base-200 cursor-pointer"
                         onclick="window.location='{{ route('posts.show', $post) }}'">
                         <div class="card-body space-y-3">
                             <div class="flex items-start justify-between gap-3">

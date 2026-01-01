@@ -28,16 +28,39 @@
             @endauth
         </div>
 
-        <div class="text-sm text-base-content/60 space-y-1">
+        <div class="flex flex-row justify-between">
+                    <div class="text-sm text-base-content/60 space-y-1">
             <p>By {{ $post->user?->first_name }} {{ $post->user?->last_name }}</p>
             <p>{{ $post->created_at?->diffForHumans() }}</p>
         </div>
+            @auth
+                <form method="POST"
+                    action="{{ $likedByCurrentUser ? route('posts.unlike', [$post, 'redirect' => 'show']) : route('posts.like', [$post, 'redirect' => 'show']) }}">
+                    @csrf
+                    @if ($likedByCurrentUser)
+                        @method('DELETE')
+                    @endif
+                    <button type="submit" aria-label="Like"
+                        class="group inline-flex items-center justify-center rounded-full p-2
+               transition
+               {{ $likedByCurrentUser ? 'text-red-500' : 'text-gray-400 hover:text-red-400' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                            fill="{{ $likedByCurrentUser ? 'currentColor' : 'none' }}" stroke="currentColor"
+                            stroke-width="2" class="w-5 h-5 transition-transform group-hover:scale-110">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+                        </svg>
+                    </button>
+                </form>
+            @endauth
+        </div>
+
 
         <div class="prose max-w-none">
             <p>{{ $post->content }}</p>
         </div>
 
-        <div id="post-feedback" class="flex items-center justify-between text-xs text-base-content/60">
+        <div class="flex items-center justify-between text-xs text-base-content/60">
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
@@ -48,19 +71,6 @@
                     <span>{{ $commentCount }} comments</span>
                 </div>
             </div>
-            @auth
-                <form method="POST"
-                    action="{{ $likedByCurrentUser ? route('posts.unlike', [$post, 'redirect' => 'show']) : route('posts.like', [$post, 'redirect' => 'show']) }}">
-                    @csrf
-                    @if ($likedByCurrentUser)
-                        @method('DELETE')
-                    @endif
-                    <button type="submit"
-                        class="btn btn-xs {{ $likedByCurrentUser ? 'btn-secondary' : 'btn-ghost' }}">
-                        {{ $likedByCurrentUser ? 'Liked' : 'Like' }}
-                    </button>
-                </form>
-            @endauth
         </div>
 
         <div id="comments" class="space-y-3">
@@ -68,8 +78,7 @@
             @auth
                 <form method="POST" action="{{ route('posts.comment', $post) }}" class="space-y-2">
                     @csrf
-                    <textarea name="body" class="textarea textarea-bordered w-full" rows="3"
-                        placeholder="Share your thoughts...">{{ old('body') }}</textarea>
+                    <textarea name="body" class="textarea textarea-bordered w-full" rows="3" placeholder="Share your thoughts...">{{ old('body') }}</textarea>
                     <x-form-error name="body" />
                     <button type="submit" class="btn btn-sm btn-primary">
                         Comment

@@ -28,7 +28,7 @@
                                     {{ $recipe->title }}
                                 </span>
                                 @if ($recipe->created_at && \Carbon\Carbon::parse($recipe->created_at)->gt(now()->subDays(7)))
-                                    <div class="badge badge-primary">{{ $recipe->cuisineType->name }}</div>
+                                    <div class="badge badge-accent badge-soft">{{ $recipe->cuisineType->name }}</div>
                                 @endif
                             </h2>
                             <p class="text-sm text-base-content/70">
@@ -47,12 +47,12 @@
                                     </div>
                                 @endif --}}
                                         @if ($recipe->dietaryType)
-                                            <div class="badge badge-soft badge-secondary" onclick="event.stopPropagation();">
+                                            <div class="badge  badge-secondary" onclick="event.stopPropagation();">
                                                 {{ $recipe->dietaryType->name }}
                                             </div>
                                         @endif
                                         @if ($recipe->difficulty)
-                                            <div class="badge badge-soft badge-primary">
+                                            <div class="badge  badge-primary">
                                                 {{ $recipe->difficulty->name }}
                                             </div>
                                         @endif
