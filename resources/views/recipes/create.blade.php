@@ -13,8 +13,10 @@
                 </x-form-field>
 
                 <x-form-field>
-                    <x-form-label>Description</x-form-label>
-                    <textarea name="description" class="textarea textarea-bordered w-full" rows="6" required>{{ old('description') }}</textarea>
+                    <x-form-label>Description (Markdown supported)</x-form-label>
+                    <textarea name="description" class="textarea textarea-bordered w-full" rows="6" required
+                        placeholder="# Recipe title&#10;&#10;Describe your recipe with **bold**, _italic_, lists, and [links](https://example.com)">{{ old('description') }}</textarea>
+                    <p class="mt-1 text-xs text-base-content/60">Use Markdown for formatting: headings, lists, bold, italic, links.</p>
                     <x-form-error name="description" />
                 </x-form-field>
 

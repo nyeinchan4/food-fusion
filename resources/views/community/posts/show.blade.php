@@ -56,9 +56,7 @@
         </div>
 
 
-        <div class="prose max-w-none">
-            <p>{{ $post->content }}</p>
-        </div>
+        <div class="prose max-w-none markdown-content" data-markdown="{{ $post->content }}"></div>
 
         <div class="flex items-center justify-between text-xs text-base-content/60">
             <div class="flex items-center gap-4">

@@ -1,7 +1,7 @@
 <x-layout title="{{ $recipe->title }}">
     <div class="max-w-2xl mx-auto py-10 space-y-4 px-4">
         <div class="rounded-2xl overflow-hidden bg-base-200">
-            <img src="{{ $recipe->image_path ? asset('storage/' . $recipe->image_path) : 'https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp' }}"
+            <img src="{{ $recipe->image_path ? asset('storage/' . $recipe->image_path) : asset('assets/images/recipe-placeholder.jpg') }}"
                 alt="{{ $recipe->title }}" class="w-full h-64 object-cover" />
         </div>
 
@@ -60,9 +60,7 @@
             </p>
         </div>
 
-        <div class="prose max-w-none">
-            <p>{{ $recipe->description }}</p>
-        </div>
+        <div class="prose max-w-none markdown-content" data-markdown="{{ $recipe->description }}"></div>
 
         <div class="mt-6">
             <a href="{{ route('recipes.index') }}" class="link link-hover text-sm">

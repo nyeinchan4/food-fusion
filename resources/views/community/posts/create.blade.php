@@ -23,8 +23,10 @@
                 </x-form-field>
 
                 <x-form-field>
-                    <x-form-label>Content</x-form-label>
-                    <textarea name="content" class="textarea textarea-bordered w-full" rows="8" required>{{ old('content') }}</textarea>
+                    <x-form-label>Content (Markdown supported)</x-form-label>
+                    <textarea name="content" class="textarea textarea-bordered w-full" rows="8" required
+                        placeholder="# Heading&#10;&#10;Write your story with **bold**, _italic_, lists, and [links](https://example.com)">{{ old('content') }}</textarea>
+                    <p class="mt-1 text-xs text-base-content/60">Use Markdown for formatting: headings, lists, bold, italic, links.</p>
                     <x-form-error name="content" />
                 </x-form-field>
 
@@ -41,4 +43,3 @@
         </div>
     </div>
 </x-layout>
-
