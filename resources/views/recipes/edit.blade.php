@@ -15,9 +15,35 @@
 
                 <x-form-field>
                     <x-form-label>Description (Markdown supported)</x-form-label>
-                    <textarea name="description" class="textarea textarea-bordered w-full" rows="6" required
-                        placeholder="# Recipe title&#10;&#10;Describe your recipe with **bold**, _italic_, lists, and [links](https://example.com)">{{ old('description', $recipe->description) }}</textarea>
-                    <p class="mt-1 text-xs text-base-content/60">Use Markdown for formatting: headings, lists, bold, italic, links.</p>
+                    <div class="space-y-2 markdown-editor">
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-xs btn-outline" data-md-action="bold">
+                                Bold
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline" data-md-action="italic">
+                                Italic
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline" data-md-action="heading">
+                                Heading
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline" data-md-action="list">
+                                List
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline" data-md-action="link">
+                                Link
+                            </button>
+                        </div>
+                        <textarea name="description"
+                            class="textarea textarea-bordered w-full markdown-editor-input" rows="6" required
+                            placeholder="# Recipe title&#10;&#10;Describe your recipe with **bold**, _italic_, lists, and [links](https://example.com)">{{ old('description', $recipe->description) }}</textarea>
+                        <p class="mt-1 text-xs text-base-content/60">Use Markdown for formatting: headings, lists, bold, italic, links.</p>
+                        <div class="border border-base-200 rounded-lg bg-base-100 p-3">
+                            <div class="text-[11px] uppercase tracking-wide text-base-content/60 mb-1">
+                                Live preview
+                            </div>
+                            <div class="prose max-w-none text-sm markdown-editor-preview"></div>
+                        </div>
+                    </div>
                     <x-form-error name="description" />
                 </x-form-field>
 
