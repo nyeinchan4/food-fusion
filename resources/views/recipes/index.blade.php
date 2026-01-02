@@ -32,7 +32,7 @@
                                 @endif
                             </h2>
                             <p class="text-sm text-base-content/70">
-                                {{ \Illuminate\Support\Str::limit($recipe->description, 120) }}
+                                {{ $recipe->description_summary }}
                             </p>
 
                             <div class="mt-3 flex items-center justify-between mt-2">

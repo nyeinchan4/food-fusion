@@ -3,10 +3,10 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
 function renderMarkdownContent() {
-    const elements = document.querySelectorAll('.markdown-content[data-markdown]');
+    const elements = document.querySelectorAll('.markdown-content');
 
     elements.forEach((element) => {
-        const source = element.dataset.markdown || '';
+        const source = element.textContent || '';
 
         if (!source.trim()) {
             return;

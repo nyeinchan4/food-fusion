@@ -60,7 +60,7 @@
             </p>
         </div>
 
-        <div class="prose max-w-none markdown-content" data-markdown="{{ $recipe->description }}"></div>
+        <div class="prose max-w-none markdown-content">{{ $recipe->description }}</div>
 
         <div class="mt-6">
             <a href="{{ route('recipes.index') }}" class="link link-hover text-sm">

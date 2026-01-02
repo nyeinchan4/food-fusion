@@ -36,11 +36,11 @@
                         onclick="window.location='{{ route('posts.show', $post) }}'">
                         <div class="card-body space-y-3">
                             <div class="flex items-start justify-between gap-3">
-                                <div class="space-y-1">
-                                    <span class="text-lg font-semibold">
+                                <div class="space-y-1 ">
+                                    <div class="text-lg font-semibold">
                                         {{ $post->title }}
-                                    </span>
-                                    <p class="text-xs uppercase tracking-wide text-base-content/60">
+                                    </div>
+                                    <p class="text-xs badge badge-soft badge-secondary uppercase tracking-wide ">
                                         {{ ucfirst($post->type) }}
                                     </p>
                                 </div>
@@ -51,7 +51,7 @@
                             </div>
 
                             <p class="text-sm text-base-content/80 line-clamp-3">
-                                {{ \Illuminate\Support\Str::limit($post->content, 200) }}
+                                {{ $post->content_summary }}
                             </p>
 
                             <div class="mt-4 flex items-center justify-between text-xs text-base-content/60">
@@ -74,7 +74,7 @@
                                             @method('DELETE')
                                         @endif
                                         <button type="submit"
-                                            class="btn btn-xs {{ in_array($post->id, $likedPostIds ?? []) ? 'btn-secondary' : 'btn-ghost' }}">
+                                            class="btn btn-xs {{ in_array($post->id, $likedPostIds ?? []) ? 'btn-primary btn-soft' : 'btn-ghost' }}">
                                             {{ in_array($post->id, $likedPostIds ?? []) ? 'Liked' : 'Like' }}
                                         </button>
                                     </form>
