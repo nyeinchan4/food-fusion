@@ -15,12 +15,25 @@ class RecipeController extends Controller
 {
     public function index(Request $request): View
     {
-        $recipes = Recipe::query()
-            ->with(['user', 'cuisineType', 'dietaryType', 'difficulty'])
-            ->orderByDesc('created_at')
-            ->get();
+        $search = $request->query('q');
 
-        return view('recipes.index', compact('recipes'));
+        $recipesQuery = Recipe::query()
+            ->with(['user', 'cuisineType', 'dietaryType', 'difficulty'])
+            ->orderByDesc('created_at');
+
+        if ($search) {
+            $recipesQuery->where(function ($query) use ($search) {
+                $query->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%');
+            });
+        }
+
+        $recipes = $recipesQuery->get();
+
+        return view('recipes.index', [
+            'recipes' => $recipes,
+            'search' => $search,
+        ]);
     }
 
     public function create(): View
