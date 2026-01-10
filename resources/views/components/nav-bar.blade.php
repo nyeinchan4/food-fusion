@@ -8,18 +8,17 @@
             <li><x-nav-link href="/" :active="request()->is('/')">Home</x-nav-link></li>
             <li><x-nav-link href="/recipes" :active="request()->is('recipes')">Recipes</x-nav-link></li>
             <li><x-nav-link href="/posts" :active="request()->is('posts')">Community</x-nav-link></li>
-            <li><x-nav-link href="/contact" :active="request()->is('contact')">Contact</x-nav-link></li>
-            <li><x-nav-link href="/about" :active="request()->is('about')">About</x-nav-link></li>
-            <li><x-nav-link href="/resource" :active="request()->is('resource')">Resources</x-nav-link></li>
-            {{-- <li>
-                <details>
-                    <summary>Resource</summary>
-                    <ul class="bg-base-100 rounded-t-none p-2">
-                        <li><x-nav-link>Culinary</x-nav-link></li>
-                        <li><x-nav-link>Educational</x-nav-link></li>
-                    </ul>
-                </details>
-            </li> --}}
+            @auth
+                @if (auth()->user()->is_admin)
+                    <li><x-nav-link href="/admin/contacts" :active="request()->is('admin/contacts')">Contact List</x-nav-link></li>
+                @else
+                    <li><x-nav-link href="/contact" :active="request()->is('contact')">Contact</x-nav-link></li>
+                @endif
+            @else
+                <li><x-nav-link href="/contact" :active="request()->is('contact')">Contact</x-nav-link></li>
+            @endauth
+
+            <li><x-nav-link href="/about" :active="request()->is('about')">About</x-nav-link></li>  
             @guest
                 <li>
                     <x-nav-link class="btn" href="/register" :active="request()->is('register')">Register</x-nav-link>

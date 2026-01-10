@@ -16,10 +16,12 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description');
+            $table->string('image_path')->nullable();
             $table->foreignId('cuisine_type_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('dietary_type_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('difficulty_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamp('created_at')->useCurrent();
+            
             $table->boolean('is_community')->default(false); 
         });
 

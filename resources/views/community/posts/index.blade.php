@@ -24,8 +24,6 @@
 
 
 
-
-
         @if ($posts->isEmpty())
             <p class="text-sm text-base-content/70">No community posts yet.</p>
         @else

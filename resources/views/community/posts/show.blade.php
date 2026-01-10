@@ -1,5 +1,10 @@
 <x-layout title="{{ $post->title }}">
     <div class="max-w-2xl mx-auto py-10 space-y-6">
+        <div class="rounded-2xl overflow-hidden bg-base-200">
+            <img src="{{ $post->image_path ? asset('storage/' . $post->image_path) : asset('assets/images/recipe-placeholder.jpg') }}"
+                alt="{{ $post->title }}" class="w-full h-64 object-cover" />
+        </div>
+
         <div class="flex items-center justify-between gap-4">
             <div>
                 <h1 class="text-3xl font-semibold">{{ $post->title }}</h1>
@@ -29,10 +34,10 @@
         </div>
 
         <div class="flex flex-row justify-between">
-                    <div class="text-sm text-base-content/60 space-y-1">
-            <p>By {{ $post->user?->first_name }} {{ $post->user?->last_name }}</p>
-            <p>{{ $post->created_at?->diffForHumans() }}</p>
-        </div>
+            <div class="text-sm text-base-content/60 space-y-1">
+                <p>By {{ $post->user?->first_name }} {{ $post->user?->last_name }}</p>
+                <p>{{ $post->created_at?->diffForHumans() }}</p>
+            </div>
             @auth
                 <form method="POST"
                     action="{{ $likedByCurrentUser ? route('posts.unlike', [$post, 'redirect' => 'show']) : route('posts.like', [$post, 'redirect' => 'show']) }}">

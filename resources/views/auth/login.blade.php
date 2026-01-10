@@ -57,7 +57,7 @@
             <!-- image -->
             <div class="md:block hidden w-1/2">
                 <img class="rounded-2xl"
-                    src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Zm9vZHxlbnwwfHwwfHx8Mg%3D%3D"
+                    src="{{ asset('assets/images/login-visual.webp') }}"
                     alt="Login image">
             </div>
         </div>

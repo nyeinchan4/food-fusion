@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->boolean('is_verified')->default(false);
+            $table->boolean('is_admin')->default(false);
             $table->unsignedTinyInteger('failed_login_attempts')->default(0);
             $table->timestamp('locked_until')->nullable();
             $table->timestamps();

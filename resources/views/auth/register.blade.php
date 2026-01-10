@@ -69,7 +69,7 @@
             <!-- image -->
             <div class="md:block hidden w-1/2">
                 <img class="rounded-2xl"
-                    src="https://images.unsplash.com/photo-1645432524603-2a5172479006?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                    src="{{ asset('assets/images/register-visual.webp') }}"
                     alt="Register image">
             </div>
         </div>
