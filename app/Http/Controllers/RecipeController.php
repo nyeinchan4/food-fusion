@@ -16,6 +16,9 @@ class RecipeController extends Controller
     public function index(Request $request): View
     {
         $search = $request->query('q');
+        $cuisineFilter = $request->query('cuisine_type_id');
+        $dietaryFilter = $request->query('dietary_type_id');
+        $difficultyFilter = $request->query('difficulty_id');
 
         $recipesQuery = Recipe::query()
             ->with(['user', 'cuisineType', 'dietaryType', 'difficulty'])
@@ -28,11 +31,33 @@ class RecipeController extends Controller
             });
         }
 
+        if ($cuisineFilter) {
+            $recipesQuery->where('cuisine_type_id', $cuisineFilter);
+        }
+
+        if ($dietaryFilter) {
+            $recipesQuery->where('dietary_type_id', $dietaryFilter);
+        }
+
+        if ($difficultyFilter) {
+            $recipesQuery->where('difficulty_id', $difficultyFilter);
+        }
+
         $recipes = $recipesQuery->get();
+
+        $cuisineTypes = CuisineType::query()->orderBy('name')->get();
+        $dietaryTypes = DietaryType::query()->orderBy('name')->get();
+        $difficulties = Difficulty::query()->orderBy('name')->get();
 
         return view('recipes.index', [
             'recipes' => $recipes,
             'search' => $search,
+            'cuisineTypes' => $cuisineTypes,
+            'dietaryTypes' => $dietaryTypes,
+            'difficulties' => $difficulties,
+            'cuisineFilter' => $cuisineFilter,
+            'dietaryFilter' => $dietaryFilter,
+            'difficultyFilter' => $difficultyFilter,
         ]);
     }
 

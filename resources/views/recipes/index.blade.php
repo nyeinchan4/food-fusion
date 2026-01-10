@@ -12,17 +12,62 @@
         </div>
 
         <div class="mb-10">
-            <form method="GET" action="{{ route('recipes.index') }}" class="flex flex-row max-w-md">
-                <label class="input input-bordered flex items-center gap-2 w-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="7" />
-                        <line x1="16.5" y1="16.5" x2="21" y2="21" />
-                    </svg>
-                    <input type="text" name="q" value="{{ $search ?? '' }}" class="grow"
-                        placeholder="Search recipes..." />
-                </label>
-                <button type="submit" class="ms-2 btn btn-accent">Search</button>
+            <form method="GET" action="{{ route('recipes.index') }}" class="space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-end md:gap-3">
+                <div class="w-full md:w-64">
+                    <label class="block text-xs font-semibold mb-1">Search</label>
+                    <label class="input input-bordered flex items-center gap-2 w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="7" />
+                            <line x1="16.5" y1="16.5" x2="21" y2="21" />
+                        </svg>
+                        <input type="text" name="q" value="{{ $search ?? '' }}" class="grow"
+                            placeholder="Search recipes..." />
+                    </label>
+                </div>
+
+                <div class="w-full md:w-48">
+                    <label class="block text-xs font-semibold mb-1">Cuisine type</label>
+                    <select name="cuisine_type_id" class="select select-bordered w-full">
+                        <option value="">All</option>
+                        @foreach ($cuisineTypes as $type)
+                            <option value="{{ $type->id }}" @selected(($cuisineFilter ?? null) == $type->id)>
+                                {{ $type->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="w-full md:w-48">
+                    <label class="block text-xs font-semibold mb-1">Dietary type</label>
+                    <select name="dietary_type_id" class="select select-bordered w-full">
+                        <option value="">All</option>
+                        @foreach ($dietaryTypes as $type)
+                            <option value="{{ $type->id }}" @selected(($dietaryFilter ?? null) == $type->id)>
+                                {{ $type->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="w-full md:w-48">
+                    <label class="block text-xs font-semibold mb-1">Difficulty</label>
+                    <select name="difficulty_id" class="select select-bordered w-full">
+                        <option value="">All</option>
+                        @foreach ($difficulties as $difficulty)
+                            <option value="{{ $difficulty->id }}" @selected(($difficultyFilter ?? null) == $difficulty->id)>
+                                {{ $difficulty->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-accent">Filter</button>
+                    @if (($search ?? null) || ($cuisineFilter ?? null) || ($dietaryFilter ?? null) || ($difficultyFilter ?? null))
+                        <a href="{{ route('recipes.index') }}" class="btn btn-ghost">Clear</a>
+                    @endif
+                </div>
             </form>
         </div>
 
