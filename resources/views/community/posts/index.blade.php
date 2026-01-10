@@ -32,80 +32,77 @@
             <div class="space-y-4">
                 @foreach ($posts as $post)
                     <article id="post-{{ $post->id }}"
-                        class="transform transition-transform duration-300 hover:scale-102 card bg-base-100 shadow-sm border border-base-200 cursor-pointer"
+                        class="group card bg-white shadow-md border border-base-300 rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
                         onclick="window.location='{{ route('posts.show', $post) }}'">
-                        <div class="card-body space-y-3">
-                            <div class="flex items-start justify-between gap-3">
-                                @if ($post->image_path)
-                                    <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-                                        <img src="{{ asset('storage/' . $post->image_path) }}"
-                                            alt="{{ $post->title }}" class="w-full h-full object-cover" />
-                                    </div>
-                                @endif
-                                <div class="space-y-1 ">
-                                    <div class="text-lg font-semibold">
+                        <div class="card-body space-y-4">
+
+                            {{-- Image banner --}}
+                            @if ($post->image_path)
+                                <div class="w-full h-40 rounded-xl overflow-hidden">
+                                    <img src="{{ asset('storage/' . $post->image_path) }}" alt="{{ $post->title }}"
+                                        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                                </div>
+                            @endif
+
+                            {{-- Title + meta --}}
+                            <div class="space-y-2">
+                                <div class="flex items-start justify-between gap-3">
+                                    <h2 class="text-xl font-semibold leading-tight">
                                         {{ $post->title }}
+                                    </h2>
+
+                                    <div class="text-[11px] text-base-content/60 text-right">
+                                        <p>{{ $post->user?->first_name }} {{ $post->user?->last_name }}</p>
+                                        <p>{{ $post->created_at?->diffForHumans() }}</p>
                                     </div>
-                                    <p class="text-xs badge badge-soft badge-secondary uppercase tracking-wide ">
-                                        {{ ucfirst($post->type) }}
-                                    </p>
                                 </div>
-                                <div class="text-xs text-base-content/60 text-right">
-                                    <p>By {{ $post->user?->first_name }} {{ $post->user?->last_name }}</p>
-                                    <p>{{ $post->created_at?->diffForHumans() }}</p>
-                                </div>
+
+                                <span class="badge badge-secondary badge-outline uppercase tracking-wide text-[10px]">
+                                    {{ ucfirst($post->type) }}
+                                </span>
                             </div>
 
+                            {{-- Content preview --}}
                             <p class="text-sm text-base-content/80 line-clamp-3">
                                 {{ $post->content_summary }}
                             </p>
 
-                            <div class="mt-4 flex items-center justify-between text-xs text-base-content/60">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex items-center gap-1">
+                            <div class="divider my-0"></div>
+
+                            {{-- Footer actions --}}
+                            <div class="flex items-center justify-between">
+
+                                {{-- Stats --}}
+                                <div class="flex items-center gap-4 text-xs text-base-content/70">
+
+                                    <div class="flex items-center gap-1.5">
                                         <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
                                         <span>{{ $post->likes_count }} likes</span>
                                     </div>
-                                    <div class="flex items-center gap-1">
+
+                                    <div class="flex items-center gap-1.5">
                                         <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
                                         <span>{{ $post->comments_count }} comments</span>
                                     </div>
                                 </div>
+
+                                {{-- Like button --}}
                                 @auth
-                                    <form method="POST"
-                                        action="{{ in_array($post->id, $likedPostIds ?? []) ? route('posts.unlike', $post) : route('posts.like', $post) }}"
-                                        onclick="event.stopPropagation();">
+                                    <form method="POST" onclick="event.stopPropagation();"
+                                        action="{{ in_array($post->id, $likedPostIds ?? []) ? route('posts.unlike', $post) : route('posts.like', $post) }}">
                                         @csrf
                                         @if (in_array($post->id, $likedPostIds ?? []))
                                             @method('DELETE')
                                         @endif
+
                                         <button type="submit"
-                                            class="btn btn-xs {{ in_array($post->id, $likedPostIds ?? []) ? 'btn-primary btn-soft' : 'btn-ghost' }}">
+                                            class="btn btn-sm {{ in_array($post->id, $likedPostIds ?? []) ? 'btn-primary btn-soft' : 'btn-soft' }}">
                                             {{ in_array($post->id, $likedPostIds ?? []) ? 'Liked' : 'Like' }}
                                         </button>
                                     </form>
                                 @endauth
-                            </div>
 
-                            {{-- @auth
-                                @php
-                                    $canManage = auth()->user()->is_admin || auth()->id() === $post->user_id;
-                                @endphp
-                                @if ($canManage)
-                                    <div class="flex gap-2 justify-end">
-                                        <a href="{{ route('posts.edit', $post) }}" class="btn btn-xs btn-outline">
-                                            Edit
-                                        </a>
-                                        <form method="POST" action="{{ route('posts.destroy', $post) }}">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="btn btn-xs btn-error" type="submit">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    </div>
-                                @endif
-                            @endauth --}}
+                            </div>
                         </div>
                     </article>
                 @endforeach
