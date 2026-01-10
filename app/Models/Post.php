@@ -17,6 +17,7 @@ class Post extends Model
         'type',
         'title',
         'content',
+        'image_path',
     ];
 
     public function user(): BelongsTo

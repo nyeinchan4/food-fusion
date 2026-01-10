@@ -26,10 +26,12 @@ class DatabaseSeeder extends Seeder
             CuisineTypeSeeder::class,
             DietaryTypeSeeder::class,
             DifficultySeeder::class,
-            //UserSeeder::class,
+            UserSeeder::class,
             ResourceCategorySeeder::class,
             ResourceSeeder::class,
-
+            PostSeeder::class,
+            RecipeSeeder::class,
+            ContactSeeder::class,
         ]);
     }
 }

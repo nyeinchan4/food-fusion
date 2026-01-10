@@ -18,7 +18,7 @@ return new class extends Migration
             $table->enum('type', ['recipe', 'tip', 'experience'])->default('recipe');
             $table->string('title');
             $table->text('content');
-            // $table->string('image_path')->nullable();
+            $table->string('image_path')->nullable();
             $table->timestamps();
         });
     }

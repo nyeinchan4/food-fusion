@@ -36,6 +36,12 @@
                         onclick="window.location='{{ route('posts.show', $post) }}'">
                         <div class="card-body space-y-3">
                             <div class="flex items-start justify-between gap-3">
+                                @if ($post->image_path)
+                                    <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                                        <img src="{{ asset('storage/' . $post->image_path) }}"
+                                            alt="{{ $post->title }}" class="w-full h-full object-cover" />
+                                    </div>
+                                @endif
                                 <div class="space-y-1 ">
                                     <div class="text-lg font-semibold">
                                         {{ $post->title }}

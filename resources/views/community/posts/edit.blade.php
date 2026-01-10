@@ -2,7 +2,7 @@
     <div class="max-w-xl mx-auto py-10">
         <h1 class="text-3xl font-semibold mb-6">Edit your post</h1>
 
-        <form method="POST" action="{{ route('posts.update', $post) }}">
+        <form method="POST" action="{{ route('posts.update', $post) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -21,6 +21,12 @@
                     <x-form-label>Title</x-form-label>
                     <x-form-input type="text" name="title" value="{{ old('title', $post->title) }}" required />
                     <x-form-error name="title" />
+                </x-form-field>
+
+                <x-form-field>
+                    <x-form-label>Image (optional)</x-form-label>
+                    <x-form-input type="file" name="image" accept="image/*" />
+                    <x-form-error name="image" />
                 </x-form-field>
 
                 <x-form-field>

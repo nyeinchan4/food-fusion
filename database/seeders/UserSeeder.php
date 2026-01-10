@@ -15,7 +15,16 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         //
-        User::create([
+        User::firstOrCreate([
+            'first_name' => 'Admin',
+            'last_name'     => 'User',
+            'email'      => 'admin@gmail.com',
+            'password'   => Hash::make('@dminPassword'),
+            'is_verified'=> true,
+            'is_admin' => true,
+        ]);
+
+        User::firstOrCreate([
             'first_name' => 'Test',
             'last_name'     => 'User',
             'email'      => 'test@gmail.com',
@@ -24,13 +33,6 @@ class UserSeeder extends Seeder
             'is_admin' => false,
         ]);
 
-        User::create([
-            'first_name' => 'Admin',
-            'last_name'     => 'User',
-            'email'      => 'admin@gmail.com',
-            'password'   => Hash::make('@dminPassword'),
-            'is_verified'=> true,
-            'is_admin' => true,
-        ]);
+
     }
 }

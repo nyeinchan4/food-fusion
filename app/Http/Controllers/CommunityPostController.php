@@ -44,13 +44,23 @@ class CommunityPostController extends Controller
             'type' => ['required', 'in:recipe,tip,experience'],
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
+            'image' => ['nullable', 'image', 'max:2048'],
         ]);
+
+        $imagePath = null;
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('posts', 'public');
+        }
+
+        unset($validated['image']);
 
         Post::create([
             'user_id' => $request->user()->id,
             'type' => $validated['type'],
             'title' => $validated['title'],
             'content' => $validated['content'],
+            'image_path' => $imagePath,
         ]);
 
         return redirect()
@@ -98,6 +108,7 @@ class CommunityPostController extends Controller
             'type' => ['required', 'in:recipe,tip,experience'],
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
+            'image' => ['nullable', 'image', 'max:2048'],
         ]);
 
         $user = $request->user();
@@ -106,7 +117,15 @@ class CommunityPostController extends Controller
             abort(403);
         }
 
-        $post->update($validated);
+        $data = $validated;
+
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('posts', 'public');
+        }
+
+        unset($data['image']);
+
+        $post->update($data);
 
         return redirect()
             ->route('posts.index')

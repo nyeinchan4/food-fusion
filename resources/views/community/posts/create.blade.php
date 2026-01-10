@@ -2,7 +2,7 @@
     <div class="max-w-xl mx-auto py-10">
         <h1 class="text-3xl font-semibold mb-6">Share with the community</h1>
 
-        <form method="POST" action="{{ route('posts.store') }}">
+        <form method="POST" action="{{ route('posts.store') }}" enctype="multipart/form-data">
             @csrf
 
             <fieldset class="space-y-4">
@@ -20,6 +20,12 @@
                     <x-form-label>Title</x-form-label>
                     <x-form-input type="text" name="title" value="{{ old('title') }}" required />
                     <x-form-error name="title" />
+                </x-form-field>
+
+                <x-form-field>
+                    <x-form-label>Image (optional)</x-form-label>
+                    <x-form-input class="file-input file-input-ghost" type="file" name="image" accept="image/*" />
+                    <x-form-error name="image" />
                 </x-form-field>
 
                 <x-form-field>
