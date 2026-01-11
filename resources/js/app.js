@@ -104,9 +104,71 @@ function initMarkdownEditors() {
     });
 }
 
+function initCookieBanner() {
+    const banner = document.querySelector('[data-cookie-banner]');
+
+    if (!banner) {
+        return;
+    }
+
+    if (banner.dataset.cookieReady === 'true') {
+        return;
+    }
+
+    banner.dataset.cookieReady = 'true';
+
+    const stored = window.localStorage.getItem('foodfusion_cookie_consent');
+
+    if (stored === 'accepted' || stored === 'rejected') {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    const close = () => {
+        banner.classList.add('hidden');
+    };
+
+    const acceptButton = banner.querySelector('[data-cookie-accept]');
+    const rejectButton = banner.querySelector('[data-cookie-reject]');
+    
+
+    const sendConsent = (accepted) => {
+        window.localStorage.setItem('foodfusion_cookie_consent', accepted ? 'accepted' : 'rejected');
+
+        const isAuth = window.foodfusionUserIsAuthenticated === true
+            || window.foodfusionUserIsAuthenticated === 'true';
+
+        if (!isAuth) {
+            return;
+        }
+
+        fetch('/cookie-consent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ accepted }),
+        }).catch(() => {});
+    };
+
+    acceptButton?.addEventListener('click', () => {
+        sendConsent(true);
+        close();
+    });
+
+    rejectButton?.addEventListener('click', () => {
+        sendConsent(false);
+        close();
+    });
+}
+
 function boot() {
+    console.log('boot');
     renderMarkdownContent();
     initMarkdownEditors();
+    initCookieBanner();
 }
 
 if (document.readyState === 'loading') {

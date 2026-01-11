@@ -5,4 +5,5 @@
   {{ $slot }}
 
     <x-footer />
+    <x-cookie-banner />
 </x-app>

@@ -7,6 +7,7 @@ use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\CommunityPostController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\CookieConsentController;
 use App\Models\Recipe;
 
 Route::get('/', function () {
@@ -49,4 +50,7 @@ Route::resource('recipes', RecipeController::class)->only(['index', 'show']);
 
 Route::resource('resource', ResourceController::class)->only(['index', 'show']);
 
+Route::post('/cookie-consent', [CookieConsentController::class, 'store'])
+    ->name('cookie-consent.store');
 
+Route::view('/privacy', 'legal.privacy')->name('privacy');

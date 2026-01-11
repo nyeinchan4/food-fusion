@@ -1,8 +1,7 @@
-<x-app>
+<x-layout>
     <x-slot:title>
         Food Fusion
     </x-slot:title>
-    <x-nav-bar />
 
     <div class="hero mt-10 lg:mt-30">
         <div class="hero-content gap-10 lg:gap-40 flex-col lg:flex-row-reverse">
@@ -40,5 +39,4 @@
         </div>
     </div>
 
-    <x-footer />
-</x-app>
+</x-layout>
