@@ -9,9 +9,28 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\CookieConsentController;
 use App\Models\Recipe;
+use App\Models\Post;
+use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
-    return view('core.home');
+    $featuredRecipes = Recipe::with(['user', 'cuisineType', 'dietaryType', 'difficulty'])
+        ->latest('id')
+        ->take(3)
+        ->get();
+    
+    $recentPosts = Post::with(['user'])
+        ->withCount(['likes', 'comments'])
+        ->latest()
+        ->take(3)
+        ->get();
+    
+    $stats = [
+        'recipes' => Recipe::count(),
+        'posts' => Post::count(),
+        'users' => DB::table('users')->count(),
+    ];
+    
+    return view('core.home', compact('featuredRecipes', 'recentPosts', 'stats'));
 });
 Route::middleware('auth')->group(function () {
     Route::resource('recipes', RecipeController::class)->except(['index', 'show']);

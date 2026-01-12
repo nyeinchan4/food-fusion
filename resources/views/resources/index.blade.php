@@ -44,7 +44,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="w-2 h-2 rounded-full bg-secondary"></span>
-                            Renewable energy
+                            Educational Resources
                         </div>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                                 name="resource_tabs"
                                 role="tab"
                                 class="tab text-xs md:text-sm"
-                                aria-label="Renewable Energy"
+                                aria-label="Educational Resources"
                             />
                         </div>
                     </div>
@@ -90,7 +90,7 @@
                         <div role="tabpanel" class="tab-content py-4">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
-                                    <h3 class="font-semibold text-base">Renewable Energy</h3>
+                                    <h3 class="font-semibold text-base">Educational Resources</h3>
                                     <p class="text-xs text-base-content/70">
                                         Learn how sustainable energy can transform the way you cook at home.
                                     </p>
@@ -158,7 +158,7 @@
                 name="resource_tabs"
                 role="tab"
                 class="tab text-xs md:text-sm"
-                aria-label="Renewable Energy"
+                aria-label="Educational Resources"
             />
             <div role="tabpanel" class="tab-content py-6">
                 <div class="mb-4">

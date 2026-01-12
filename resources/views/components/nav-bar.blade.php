@@ -13,6 +13,7 @@
                 <li><x-nav-link href="/" :active="request()->is('/')">Home</x-nav-link></li>
                 <li><x-nav-link href="/recipes" :active="request()->is('recipes')">Recipes</x-nav-link></li>
                 <li><x-nav-link href="/posts" :active="request()->is('posts')">Community</x-nav-link></li>
+                <li><x-nav-link href="/resource" :active="request()->is('resource')">Resources</x-nav-link></li>
                 @auth
                     @if (auth()->user()->is_admin)
                         <li><x-nav-link href="/admin/contacts" :active="request()->is('admin/contacts')">Contact List</x-nav-link></li>
@@ -25,8 +26,7 @@
                 <li><x-nav-link href="/about" :active="request()->is('about')">About</x-nav-link></li>
                 @guest
                     <li>
-                        <x-nav-link class="btn btn-sm w-full justify-center" href="/register"
-                            :active="request()->is('register')">Register</x-nav-link>
+                        <button onclick="join_us_modal.showModal()" class="btn btn-sm w-full justify-center">Join Us</button>
                     </li>
                     <li>
                         <a class="btn btn-primary btn-sm w-full justify-center" href="/login"
@@ -55,6 +55,7 @@
             <li><x-nav-link href="/" :active="request()->is('/')">Home</x-nav-link></li>
             <li><x-nav-link href="/recipes" :active="request()->is('recipes')">Recipes</x-nav-link></li>
             <li><x-nav-link href="/posts" :active="request()->is('posts')">Community</x-nav-link></li>
+            <li><x-nav-link href="/resource" :active="request()->is('resource')">Resources</x-nav-link></li>
             @auth
                 @if (auth()->user()->is_admin)
                     <li><x-nav-link href="/admin/contacts" :active="request()->is('admin/contacts')">Contact List</x-nav-link></li>
@@ -69,7 +70,7 @@
     </div>
     <div class="navbar-end hidden lg:flex gap-2">
         @guest
-            <x-nav-link class="btn" href="/register" :active="request()->is('register')">Register</x-nav-link>
+            <button onclick="join_us_modal.showModal()" class="btn">Join Us</button>
             <a class="btn btn-primary" href="/login" :active="request()->is('login')">Login</a>
         @endguest
         @auth

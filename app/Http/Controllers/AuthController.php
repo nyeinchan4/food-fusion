@@ -34,6 +34,13 @@ class AuthController extends Controller
             'is_verified'=> false,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Registration successful. Please log in.',
+                'redirect' => route('login.form')
+            ]);
+        }
+
         return redirect()->route('login.form')
             ->with('success', 'Registration successful. Please log in.');
     }
