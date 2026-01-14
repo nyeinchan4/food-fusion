@@ -15,6 +15,7 @@ class CuisineTypeSeeder extends Seeder
             'Indian',
             'Mexican',
             'Thai',
+            'Burmese',
         ];
 
         foreach ($names as $name) {

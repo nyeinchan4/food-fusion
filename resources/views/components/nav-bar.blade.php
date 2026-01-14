@@ -17,6 +17,7 @@
                 @auth
                     @if (auth()->user()->is_admin)
                         <li><x-nav-link href="/admin/contacts" :active="request()->is('admin/contacts')">Contact List</x-nav-link></li>
+                        <li><x-nav-link href="/admin/events" :active="request()->is('admin/events*')">Events</x-nav-link></li>
                     @else
                         <li><x-nav-link href="/contact" :active="request()->is('contact')">Contact</x-nav-link></li>
                     @endif
@@ -59,6 +60,7 @@
             @auth
                 @if (auth()->user()->is_admin)
                     <li><x-nav-link href="/admin/contacts" :active="request()->is('admin/contacts')">Contact List</x-nav-link></li>
+                    <li><x-nav-link href="/admin/events" :active="request()->is('admin/events*')">Events</x-nav-link></li>
                 @else
                     <li><x-nav-link href="/contact" :active="request()->is('contact')">Contact</x-nav-link></li>
                 @endif

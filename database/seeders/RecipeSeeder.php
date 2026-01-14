@@ -34,7 +34,7 @@ Instructions:
 4. Serve: Place noodles in bowls, pour soup over, garnish, and enjoy.
 TEXT,
                 'image_path' => 'recipes/e4K8hAF7oRY3UYnNCvHdygpUEIyedEpiPKzinwW7.jpg',
-                'cuisine_type_id' => 1,
+                'cuisine_type_id' => 6,
                 'dietary_type_id' => 1,
                 'difficulty_id' => 2,
             ],
@@ -62,7 +62,7 @@ Instructions:
 5. Serve over cooked noodles with garnishes.
 TEXT,
                 'image_path' => 'recipes/2AAjehL9sfPSYu1Jt4ejipGc5Yzu4yXJyiwjllSn.jpg',
-                'cuisine_type_id' => 1,
+                'cuisine_type_id' => 6,
                 'dietary_type_id' => 4,
                 'difficulty_id' => 3,
             ],
@@ -80,7 +80,7 @@ Common preparations:
 The sticky rice itself is steamed and sometimes mixed with boiled peas. Garnish with crispy fried onions or boiled eggs.
 TEXT,
                 'image_path' => 'recipes/bzVbm48A6ryzkQCHZXYMWhAesI9dVz8R3kV1oJWV.jpg',
-                'cuisine_type_id' => 1,
+                'cuisine_type_id' => 6,
                 'dietary_type_id' => null,
                 'difficulty_id' => 3,
             ],
@@ -102,7 +102,7 @@ Instructions:
 3. Assemble noodles and sauce, add garnishes.
 TEXT,
                 'image_path' => 'recipes/WI01Gecb7ylh2INtb2hFODrEUPJNjlDZNUtdA9bi.webp',
-                'cuisine_type_id' => 1,
+                'cuisine_type_id' => 6,
                 'dietary_type_id' => null,
                 'difficulty_id' => 2,
             ],
@@ -125,7 +125,7 @@ Instructions:
 6. Serve immediately with optional broth on the side.
 TEXT,
                 'image_path' => 'recipes/cbbYJhdIk4mFplssA5Y8kUBjchTSwwzdoqbmYNQT.webp',
-                'cuisine_type_id' => 1,
+                'cuisine_type_id' => 6,
                 'dietary_type_id' => null,
                 'difficulty_id' => 2,
             ],
@@ -148,7 +148,7 @@ Instructions:
 4. Garnish and serve immediately with steamed rice.
 TEXT,
                 'image_path' => 'recipes/9MRXTJnKxzVGTP2h6wW9eeLzuQdwhKGhfPPGdhUq.jpg',
-                'cuisine_type_id' => 3,
+                'cuisine_type_id' => 2,
                 'dietary_type_id' => null,
                 'difficulty_id' => 3,
             ],

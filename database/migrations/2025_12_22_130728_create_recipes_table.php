@@ -24,7 +24,6 @@ return new class extends Migration
             
             $table->boolean('is_community')->default(false); 
         });
-
     }
 
     /**

@@ -27,6 +27,58 @@
     </div>
 
     <div class="container mx-auto max-w-7xl px-4 py-16">
+        @if($events->count() > 0)
+        <div class="mb-20">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-4xl font-bold mb-2">Upcoming Events</h2>
+                    <p class="text-base-content/70">Join us for exciting culinary experiences</p>
+                </div>
+            </div>
+            
+            <div class="carousel w-full rounded-3xl shadow-2xl">
+                @foreach($events as $index => $event)
+                <div id="event-slide-{{ $index }}" class="carousel-item relative w-full">
+                    <div class="hero min-h-[400px] w-full" style="background-image: url({{ $event->image_path ? asset('storage/' . $event->image_path) : 'https://img.daisyui.com/images/stock/photo-1609621838510-5ad474b7d25d.jpg' }});">
+                        <div class="hero-overlay bg-opacity-60"></div>
+                        <div class="hero-content text-center text-neutral-content">
+                            <div class="max-w-2xl">
+                                <div class="badge badge-primary badge-lg mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    {{ $event->event_date->format('M d, Y') }}
+                                </div>
+                                <h3 class="mb-5 text-4xl font-bold">{{ $event->title }}</h3>
+                                <p class="mb-5 text-lg">{{ Str::limit($event->description, 150) }}</p>
+                                @if($event->location)
+                                <div class="flex items-center justify-center gap-2 text-sm mb-5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span>{{ $event->location }}</span>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute flex justify-between transform -translate-y-1/2 left-5 right-5 top-1/2">
+                        <a href="#event-slide-{{ $index > 0 ? $index - 1 : $events->count() - 1 }}" class="btn btn-circle">❮</a>
+                        <a href="#event-slide-{{ $index < $events->count() - 1 ? $index + 1 : 0 }}" class="btn btn-circle">❯</a>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            
+            <div class="flex justify-center w-full py-4 gap-2">
+                @foreach($events as $index => $event)
+                <a href="#event-slide-{{ $index }}" class="btn btn-xs">{{ $index + 1 }}</a>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
             <div class="stat bg-base-100 rounded-box shadow-lg border border-base-200">
                 <div class="stat-figure text-primary">

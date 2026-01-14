@@ -8,8 +8,10 @@ use App\Http\Controllers\CommunityPostController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\CookieConsentController;
+use App\Http\Controllers\EventController;
 use App\Models\Recipe;
 use App\Models\Post;
+use App\Models\Event;
 use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
@@ -24,13 +26,18 @@ Route::get('/', function () {
         ->take(3)
         ->get();
     
+    $events = Event::active()
+        ->ordered()
+        ->take(5)
+        ->get();
+    
     $stats = [
         'recipes' => Recipe::count(),
         'posts' => Post::count(),
         'users' => DB::table('users')->count(),
     ];
     
-    return view('core.home', compact('featuredRecipes', 'recentPosts', 'stats'));
+    return view('core.home', compact('featuredRecipes', 'recentPosts', 'events', 'stats'));
 });
 Route::middleware('auth')->group(function () {
     Route::resource('recipes', RecipeController::class)->except(['index', 'show']);
@@ -43,6 +50,8 @@ Route::middleware('auth')->group(function () {
 Route::prefix('admin')->middleware('auth')->group(function () {
     Route::resource('contacts', ContactController::class)->except(['create', 'store'])
         ->names('admin.contacts');
+    Route::resource('events', EventController::class)
+        ->names('admin.events');
 });
 
 $recipeCount = 0;

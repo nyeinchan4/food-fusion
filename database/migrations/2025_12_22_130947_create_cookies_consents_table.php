@@ -17,7 +17,6 @@ return new class extends Migration
             $table->boolean('accepted');
             $table->timestamp('accepted_at');
         });
-
     }
 
     /**
