@@ -23,7 +23,14 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users',
-            'password' => 'required|min:8|confirmed',
+            'password' => [
+                'required',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+            ],
+        ], [
+            'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&).',
         ]);
 
         User::create([

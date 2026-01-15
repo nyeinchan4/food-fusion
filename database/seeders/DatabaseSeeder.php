@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             PostSeeder::class,
             RecipeSeeder::class,
             ContactSeeder::class,
+            EventSeeder::class,            
         ]);
     }
 }

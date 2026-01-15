@@ -37,6 +37,9 @@
                     <span class="label-text">Password</span>
                 </label>
                 <input type="password" name="password" placeholder="********" class="input input-bordered w-full" required />
+                <div class="text-xs text-base-content/70 mt-1">
+                    Must contain: 8+ characters, uppercase, lowercase, number, and special character (@$!%*?&)
+                </div>
                 <span class="text-error text-xs mt-1 hidden" id="error-password"></span>
             </div>
 
