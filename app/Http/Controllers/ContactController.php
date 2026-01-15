@@ -21,21 +21,31 @@ class ContactController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
+            'inquiry_type' => ['required', 'string', 'max:50'],
             'subject' => ['required', 'string', 'max:255'],
-            'message' => ['required', 'string'],
+            'message' => ['required', 'string', 'max:1000'],
         ]);
+
+        // Determine estimated response time based on inquiry type
+        $responseTime = '24-48 hours';
+        if ($validated['inquiry_type'] === 'Technical Support') {
+            $responseTime = '12-24 hours';
+        } elseif ($validated['inquiry_type'] === 'Business Inquiry') {
+            $responseTime = '2-3 business days';
+        }
 
         Contact::create([
             'user_id' => $request->user()?->id,
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'inquiry_type' => $validated['inquiry_type'],
             'subject' => $validated['subject'],
             'message' => $validated['message'],
         ]);
 
         return redirect()
             ->route('contact.create')
-            ->with('success', 'Your message has been sent.');
+            ->with('success', 'Your message has been sent. We will respond within ' . $responseTime . '.');
     }
 
     public function index(Request $request): View|RedirectResponse

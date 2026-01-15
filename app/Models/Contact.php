@@ -14,6 +14,7 @@ class Contact extends Model
         'user_id',
         'name',
         'email',
+        'inquiry_type',
         'subject',
         'message',
     ];
