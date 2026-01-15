@@ -76,7 +76,8 @@ Route::resource('posts', CommunityPostController::class)->only(['index', 'show']
 
 Route::resource('recipes', RecipeController::class)->only(['index', 'show']);
 
-Route::resource('resource', ResourceController::class)->only(['index', 'show']);
+Route::get('/culinary-resources', [ResourceController::class, 'culinaryResources'])->name('culinary-resources');
+Route::get('/educational-resources', [ResourceController::class, 'educationalResources'])->name('educational-resources');
 
 Route::post('/cookie-consent', [CookieConsentController::class, 'store'])
     ->name('cookie-consent.store');

@@ -1,4 +1,4 @@
-<footer class="footer sm:footer-horizontal bg-secondary/50 text-base-content p-10">
+<footer class="footer sm:footer-horizontal bg-secondary/20 text-base-content p-10">
   <nav>
     <h6 class="footer-title">FoodFusion</h6>
     <a href="{{ url('/') }}" class="link link-hover">Home</a>

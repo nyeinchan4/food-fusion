@@ -33,6 +33,41 @@ class UserSeeder extends Seeder
             'is_admin' => false,
         ]);
 
+        User::firstOrCreate([
+            'first_name' => 'Sarah',
+            'last_name'     => 'Chen',
+            'email'      => 'sarah.chen@gmail.com',
+            'password'   => Hash::make('password'),
+            'is_verified'=> true,
+            'is_admin' => false,
+        ]);
+
+        User::firstOrCreate([
+            'first_name' => 'Michael',
+            'last_name'     => 'Johnson',
+            'email'      => 'michael.j@gmail.com',
+            'password'   => Hash::make('password'),
+            'is_verified'=> true,
+            'is_admin' => false,
+        ]);
+
+        User::firstOrCreate([
+            'first_name' => 'Emma',
+            'last_name'     => 'Wilson',
+            'email'      => 'emma.wilson@gmail.com',
+            'password'   => Hash::make('password'),
+            'is_verified'=> false,
+            'is_admin' => false,
+        ]);
+
+        User::firstOrCreate([
+            'first_name' => 'David',
+            'last_name'     => 'Kumar',
+            'email'      => 'david.kumar@gmail.com',
+            'password'   => Hash::make('password'),
+            'is_verified'=> true,
+            'is_admin' => false,
+        ]);
 
     }
 }

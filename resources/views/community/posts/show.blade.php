@@ -1,5 +1,13 @@
 <x-layout title="{{ $post->title }}">
     <div class="max-w-2xl mx-auto py-10 space-y-6">
+        <div class="mb-4">
+            <a href="{{ route('posts.index') }}" class="btn btn-outline btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Community Cookbook
+            </a>
+        </div>
         <div class="rounded-2xl overflow-hidden bg-base-200">
             <img src="{{ $post->image_path ? asset('storage/' . $post->image_path) : asset('assets/images/recipe-placeholder.jpg') }}"
                 alt="{{ $post->title }}" class="w-full h-64 object-cover" />

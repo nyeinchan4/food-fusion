@@ -13,7 +13,15 @@
                 <li><x-nav-link href="/" :active="request()->is('/')">Home</x-nav-link></li>
                 <li><x-nav-link href="/recipes" :active="request()->is('recipes')">Recipes</x-nav-link></li>
                 <li><x-nav-link href="/posts" :active="request()->is('posts')">Community</x-nav-link></li>
-                <li><x-nav-link href="/resource" :active="request()->is('resource')">Resources</x-nav-link></li>
+                <li>
+                    <details>
+                        <summary class="font-medium">Resources</summary>
+                        <ul class="p-2 bg-base-200 rounded-t-none">
+                            <li><x-nav-link href="/culinary-resources" :active="request()->is('culinary-resources')">Culinary Resources</x-nav-link></li>
+                            <li><x-nav-link href="/educational-resources" :active="request()->is('educational-resources')">Educational Resources</x-nav-link></li>
+                        </ul>
+                    </details>
+                </li>
                 @auth
                     @if (auth()->user()->is_admin)
                         <li><x-nav-link href="/admin/contacts" :active="request()->is('admin/contacts')">Contact List</x-nav-link></li>
@@ -56,7 +64,15 @@
             <li><x-nav-link href="/" :active="request()->is('/')">Home</x-nav-link></li>
             <li><x-nav-link href="/recipes" :active="request()->is('recipes')">Recipes</x-nav-link></li>
             <li><x-nav-link href="/posts" :active="request()->is('posts')">Community</x-nav-link></li>
-            <li><x-nav-link href="/resource" :active="request()->is('resource')">Resources</x-nav-link></li>
+            <li>
+                <details>
+                    <summary class="font-medium">Resources</summary>
+                    <ul class="p-2 bg-base-100 rounded-t-none shadow-lg min-w-48">
+                        <li><x-nav-link href="/culinary-resources" :active="request()->is('culinary-resources')">Culinary Resources</x-nav-link></li>
+                        <li><x-nav-link href="/educational-resources" :active="request()->is('educational-resources')">Educational Resources</x-nav-link></li>
+                    </ul>
+                </details>
+            </li>
             @auth
                 @if (auth()->user()->is_admin)
                     <li><x-nav-link href="/admin/contacts" :active="request()->is('admin/contacts')">Contact List</x-nav-link></li>
