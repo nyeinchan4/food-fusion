@@ -141,6 +141,75 @@
                 </div>
             </div>
 
+            <!-- Culinary Video Section -->
+            <div class="bg-white rounded-3xl shadow-xl border border-base-300 overflow-hidden">
+                <div class="text-primary ps-10 pt-4">
+                    <h2 class="text-3xl font-bold mb-2 text-primary">Culinary Video Library</h2>
+                    <p class="text-primary/80">Expert chef tutorials and cooking demonstrations</p>
+                </div>
+                
+                <div class="px-8 pt-6 pb-2">
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <button class="btn btn-sm btn-primary video-filter active" data-category="all">All Videos</button>
+                        <button class="btn btn-sm btn-outline video-filter" data-category="basics">Cooking Basics</button>
+                        <button class="btn btn-sm btn-outline video-filter" data-category="techniques">Techniques</button>
+                        <button class="btn btn-sm btn-outline video-filter" data-category="recipes">Recipe Tutorials</button>
+                    </div>
+                </div>
+                
+                <div class="p-8 pt-0">
+                    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <!-- Video Card 1 -->
+                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 video-card" data-category="basics">
+                            <div class="aspect-video">
+                                <iframe class="w-full h-full" src="https://www.youtube.com/embed/A-pqjLgFCqw?si=_OViQCEfrQn-Scsb" title="Perfect French Omelette" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-bold text-dark mb-2">Perfect French Omelette</h3>
+                                <p class="text-gray-400 text-sm mb-3">Master the classic French technique for silky smooth omelettes</p>
+                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                    <span class="px-2 py-1 bg-primary text-white rounded-full">Beginner</span>
+                                    <span>•</span>
+                                    <span>5:42</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Video Card 2 -->
+                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 video-card" data-category="techniques">
+                            <div class="aspect-video">
+                                <iframe class="w-full h-full" src="https://www.youtube.com/embed/1IszT_guI08" title="Knife Skills 101" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-bold text-dark mb-2">Knife Skills 101</h3>
+                                <p class="text-gray-400 text-sm mb-3">Essential cutting techniques every home cook should know</p>
+                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                    <span class="px-2 py-1 bg-primary text-white rounded-full">Intermediate</span>
+                                    <span>•</span>
+                                    <span>8:15</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Video Card 3 -->
+                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 video-card" data-category="recipes">
+                            <div class="aspect-video">
+                                <iframe class="w-full h-full" src="https://www.youtube.com/embed/618QsMaVXp8" title="Perfect Homemade Pasta" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-bold text-dark mb-2">Perfect Homemade Pasta</h3>
+                                <p class="text-gray-400 text-sm mb-3">Create restaurant-quality pasta from scratch in your kitchen</p>
+                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                    <span class="px-2 py-1 bg-primary text-white rounded-full">Advanced</span>
+                                    <span>•</span>
+                                    <span>12:34</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Featured Resources -->
             <div class="bg-white rounded-3xl shadow-xl border border-base-300 overflow-hidden">
                 <div class="bg-white p-8 text-white">
@@ -268,4 +337,35 @@ function showNotification(message, type = 'info') {
         notification.remove();
     }, 4000);
 }
+
+// Video filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('.video-filter');
+    const videoCards = document.querySelectorAll('.video-card');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline');
+            });
+            
+            // Add active class to clicked button
+            this.classList.remove('btn-outline');
+            this.classList.add('btn-primary');
+            
+            const category = this.getAttribute('data-category');
+            
+            // Filter videos
+            videoCards.forEach(card => {
+                if (category === 'all' || card.getAttribute('data-category') === category) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+});
 </script>

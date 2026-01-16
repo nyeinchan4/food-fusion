@@ -148,20 +148,21 @@
                     <p class="text-secondary-content/80">Expert-led tutorials and documentaries on renewable energy</p>
                 </div>
                 
-                <div class="p-8">
+                <div class="px-8 pt-6 pb-2">
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <button class="btn btn-sm btn-secondary video-filter active" data-category="all">All Videos</button>
+                        <button class="btn btn-sm btn-outline video-filter" data-category="solar">Solar Energy</button>
+                        <button class="btn btn-sm btn-outline video-filter" data-category="wind">Wind Energy</button>
+                        <button class="btn btn-sm btn-outline video-filter" data-category="storage">Energy Storage</button>
+                    </div>
+                </div>
+                
+                <div class="p-8 pt-0">
                     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <!-- Video Placeholder Cards -->
-                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                            <div class="aspect-video bg-gradient-to-br to-purple-600bg-gradient-to-br to-secondary flex items-center justify-center relative">
-                                <div class="absolute inset-0 bg-black/20"></div>
-                                <div class="relative z-10 text-center text-white">
-                                    <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15M9 10V9a2 2 0 012-2h2a2 2 0 012 2v1M9 10v5a2 2 0 002 2h2a2 2 0 002-2v-5" />
-                                        </svg>
-                                    </div>
-                                    <p class="text-sm font-medium">15:30</p>
-                                </div>
+                        <!-- Video Card 1 - Solar Panel Installation -->
+                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 video-card" data-category="solar">
+                            <div class="aspect-video">
+                                <iframe class="w-full h-full" src="https://www.youtube.com/embed/xKxrkht7CpY" title="Solar Panel Installation Basics" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                             </div>
                             <div class="p-4">
                                 <h3 class="font-bold text-dark mb-2">Solar Panel Installation Basics</h3>
@@ -174,17 +175,10 @@
                             </div>
                         </div>
 
-                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                            <div class="aspect-video bg-gradient-to-br to-secondary flex items-center justify-center relative">
-                                <div class="absolute inset-0 bg-black/20"></div>
-                                <div class="relative z-10 text-center text-white">
-                                    <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15M9 10V9a2 2 0 012-2h2a2 2 0 012 2v1M9 10v5a2 2 0 002 2h2a2 2 0 002-2v-5" />
-                                        </svg>
-                                    </div>
-                                    <p class="text-sm font-medium">22:45</p>
-                                </div>
+                        <!-- Video Card 2 - Wind Energy -->
+                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 video-card" data-category="wind">
+                            <div class="aspect-video">
+                                <iframe class="w-full h-full" src="https://www.youtube.com/embed/xy9nj94xvKA" title="Wind Energy Explained" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                             </div>
                             <div class="p-4">
                                 <h3 class="font-bold text-dark mb-2">Wind Energy Explained</h3>
@@ -197,17 +191,10 @@
                             </div>
                         </div>
 
-                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                            <div class="aspect-video bg-gradient-to-br to-secondary flex items-center justify-center relative">
-                                <div class="absolute inset-0 bg-black/20"></div>
-                                <div class="relative z-10 text-center text-white">
-                                    <div class="w-16 h-16 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15M9 10V9a2 2 0 012-2h2a2 2 0 012 2v1M9 10v5a2 2 0 002 2h2a2 2 0 002-2v-5" />
-                                        </svg>
-                                    </div>
-                                    <p class="text-sm font-medium">18:12</p>
-                                </div>
+                        <!-- Video Card 3 - Battery Storage -->
+                        <div class="group bg-base-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 video-card" data-category="storage">
+                            <div class="aspect-video">
+                                <iframe class="w-full h-full" src="https://www.youtube.com/embed/f_PnNImR1ns?si=ANlqi0WLYMBckG4-" title="Battery Storage Systems" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                             </div>
                             <div class="p-4">
                                 <h3 class="font-bold text-dark mb-2">Battery Storage Systems</h3>
@@ -350,4 +337,35 @@ function showNotification(message, type = 'info') {
         notification.remove();
     }, 4000);
 }
+
+// Video filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('.video-filter');
+    const videoCards = document.querySelectorAll('.video-card');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => {
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-outline');
+            });
+            
+            // Add active class to clicked button
+            this.classList.remove('btn-outline');
+            this.classList.add('btn-secondary');
+            
+            const category = this.getAttribute('data-category');
+            
+            // Filter videos
+            videoCards.forEach(card => {
+                if (category === 'all' || card.getAttribute('data-category') === category) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+});
 </script>
