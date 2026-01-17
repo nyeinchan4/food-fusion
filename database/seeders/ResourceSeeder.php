@@ -12,56 +12,53 @@ class ResourceSeeder extends Seeder
         // --- TASK 3.6: CULINARY RESOURCES ---
         
         Resource::create([
-            'title' => 'Advanced Knife Skills Masterclass',
+            'title' => 'Knife Master Skills Tutorial',
             'category_id' => '1',
-            'file_type' => 'video',
-            'file_path' => 'resources/culinary/knife-skills.mp4',
-            'description' => 'In 2025, downloadable cooking courses provide a comprehensive digital toolkit designed for offline mastery, moving beyond simple recipes to focus on core culinary principles. These programs typically include high-definition video masterclasses covering foundational skills like knife work, heat management, and plating, alongside interactive PDF workbooks that feature technique cheat sheets and standardized recipe cards'
+            'file_type' => 'mp4',
+            'file_path' => 'resources/knife-mater-skill.mp4',
+            'description' => 'Advanced knife techniques and cutting skills for home cooks. Learn professional cutting methods, knife safety, and essential culinary skills.'
         ]);
 
         Resource::create([
-            'title' => 'Kitchen Safety & Hygiene Checklist',
+            'title' => 'Food Safety Checklist',
             'category_id' => '1',
             'file_type' => 'pdf',
-            'file_path' => 'resources/culinary/safety-guide.pdf',
-            'description' => 'In 2025, downloadable cooking courses provide a comprehensive digital toolkit designed for offline mastery, moving beyond simple recipes to focus on core culinary principles. These programs typically include high-definition video masterclasses covering foundational skills like knife work, heat management, and plating, alongside interactive PDF workbooks that feature technique cheat sheets and standardized recipe cards'
+            'file_path' => 'resources/food-safety-checklist.pdf',
+            'description' => 'Essential food safety guidelines and kitchen hygiene practices. Comprehensive checklist for maintaining food safety standards in home cooking.'
         ]);
 
         Resource::create([
-            'title' => 'Essential Herbs & Spices Chart',
+            'title' => 'Essential Spices Guide',
             'category_id' => '1',
-            'file_type' => 'image',
-            'file_path' => 'resources/culinary/spice-chart.jpg',
-            'description' => 'In 2025, downloadable cooking courses provide a comprehensive digital toolkit designed for offline mastery, moving beyond simple recipes to focus on core culinary principles. These programs typically include high-definition video masterclasses covering foundational skills like knife work, heat management, and plating, alongside interactive PDF workbooks that feature technique cheat sheets and standardized recipe cards'
+            'file_type' => 'jpg',
+            'file_path' => 'resources/essential-spices.jpg',
+            'description' => 'Complete guide to essential cooking spices and their uses. Visual reference for common spices and their applications in various cuisines.'
         ]);
 
         // --- TASK 3.7: RENEWABLE ENERGY RESOURCES ---
 
         Resource::create([
-            'title' => 'Solar Panel Installation Guide 2024',
+            'title' => 'Solar Installation Guide',
             'category_id' => '2',
             'file_type' => 'pdf',
-            'file_path' => 'resources/energy/solar-guide.pdf',
-            'description' => 'In 2025, downloadable cooking courses provide a comprehensive digital toolkit designed for offline mastery, moving beyond simple recipes to focus on core culinary principles. These programs typically include high-definition video masterclasses covering foundational skills like knife work, heat management, and plating, alongside interactive PDF workbooks that feature technique cheat sheets and standardized recipe cards'
-
+            'file_path' => 'resources/solar-installation-guide.pdf',
+            'description' => 'Complete guide for residential solar panel installation. Step-by-step instructions, safety guidelines, and cost analysis for home solar systems.'
         ]);
 
         Resource::create([
-            'title' => 'How Wind Turbines Generate Power',
+            'title' => 'How Wind Generate Power Tutorial',
             'category_id' => '2',
-            'file_type' => 'video',
-            'file_path' => 'resources/energy/wind-energy-explained.mp4',
-            'description' => 'In 2025, downloadable cooking courses provide a comprehensive digital toolkit designed for offline mastery, moving beyond simple recipes to focus on core culinary principles. These programs typically include high-definition video masterclasses covering foundational skills like knife work, heat management, and plating, alongside interactive PDF workbooks that feature technique cheat sheets and standardized recipe cards'
-
+            'file_type' => 'mp4',
+            'file_path' => 'resources/how-wind-generate-power.mp4',
+            'description' => 'Educational video on wind turbine technology and power generation. Learn how wind energy works and its environmental benefits.'
         ]);
 
         Resource::create([
-            'title' => 'The Future of Green Energy Infographic',
+            'title' => 'Green Energy Infographic',
             'category_id' => '2',
-            'file_type' => 'image',
-            'file_path' => 'resources/energy/green-future.png',
-            'description' => 'In 2025, downloadable cooking courses provide a comprehensive digital toolkit designed for offline mastery, moving beyond simple recipes to focus on core culinary principles. These programs typically include high-definition video masterclasses covering foundational skills like knife work, heat management, and plating, alongside interactive PDF workbooks that feature technique cheat sheets and standardized recipe cards'
-
+            'file_type' => 'png',
+            'file_path' => 'resources/green-energy-infographic.png',
+            'description' => 'Visual guide to renewable energy sources and sustainability. Comprehensive overview of green energy options and their impact.'
         ]);
     }
 }

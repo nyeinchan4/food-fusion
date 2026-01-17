@@ -288,11 +288,29 @@ function downloadResource(type, filePath = null, title = null) {
     button.disabled = true;
     button.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Downloading...';
     
-    // Simulate download process (replace with actual download logic)
+    // Map placeholder types to actual resources
+    const resourceMap = {
+        'recipe-cards': {
+            url: '/storage/resources/essential-spices.jpg',
+            filename: 'essential-spices.jpg',
+            title: 'Essential Spices Guide'
+        },
+        'cooking-tutorials': {
+            url: '/storage/resources/knife-mater-skill.mp4',
+            filename: 'knife-mater-skill.mp4',
+            title: 'Knife Master Skills Tutorial'
+        },
+        'kitchen-hacks': {
+            url: '/storage/resources/food-safety-checklist.pdf',
+            filename: 'food-safety-checklist.pdf',
+            title: 'Food Safety Checklist'
+        }
+    };
+    
+    // Simulate download process
     setTimeout(() => {
         if (filePath && title) {
             // For actual resources from database
-            // Create a temporary link to trigger download
             const link = document.createElement('a');
             link.href = `/storage/${filePath}`;
             link.download = title;
@@ -300,17 +318,21 @@ function downloadResource(type, filePath = null, title = null) {
             link.click();
             document.body.removeChild(link);
             
-            // Show success message
             showNotification(`Downloaded: ${title}`, 'success');
-        } else {
-            // For placeholder categories
-            const messages = {
-                'recipe-cards': 'Recipe cards collection will be available soon! Check back later.',
-                'cooking-tutorials': 'Video tutorials are coming soon! Stay tuned for updates.',
-                'kitchen-hacks': 'Kitchen hacks guide will be ready shortly! Keep cooking!'
-            };
+        } else if (resourceMap[type]) {
+            // For placeholder categories with actual resources
+            const resource = resourceMap[type];
+            const link = document.createElement('a');
+            link.href = resource.url;
+            link.download = resource.filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             
-            showNotification(messages[type] || 'Resource coming soon!', 'info');
+            showNotification(`Downloaded: ${resource.title}`, 'success');
+        } else {
+            // For any remaining placeholder categories
+            showNotification('Resource coming soon!', 'info');
         }
         
         // Reset button

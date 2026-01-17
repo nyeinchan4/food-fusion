@@ -1,5 +1,5 @@
 <x-layout title="Community Cookbook">
-    <div class="max-w-3xl mx-auto py-10 min-h-screen">
+    <div class="max-w-3xl mx-auto py-10 px-4 min-h-screen">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-3xl font-semibold">Community Cookbook</h1>

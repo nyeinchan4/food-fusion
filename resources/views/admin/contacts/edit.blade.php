@@ -1,5 +1,5 @@
 <x-layout title="Edit contact">
-    <div class="max-w-xl mx-auto py-10">
+    <div class="max-w-xl mx-auto py-10 px-4">
         <h1 class="text-3xl font-semibold mb-6">Edit contact message</h1>
 
         <form method="POST" action="{{ route('admin.contacts.update', $contact) }}">

@@ -288,11 +288,29 @@ function downloadResource(type, filePath = null, title = null) {
     button.disabled = true;
     button.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Downloading...';
     
-    // Simulate download process (replace with actual download logic)
+    // Map placeholder types to actual resources
+    const resourceMap = {
+        'solar-energy': {
+            url: '/storage/resources/solar-installation-guide.pdf',
+            filename: 'solar-installation-guide.pdf',
+            title: 'Solar Installation Guide'
+        },
+        'wind-energy': {
+            url: '/storage/resources/how-wind-generate-power.mp4',
+            filename: 'how-wind-generate-power.mp4',
+            title: 'How Wind Generate Power Tutorial'
+        },
+        'energy-storage': {
+            url: '/storage/resources/green-energy-infographic.png',
+            filename: 'green-energy-infographic.png',
+            title: 'Green Energy Infographic'
+        }
+    };
+    
+    // Simulate download process
     setTimeout(() => {
         if (filePath && title) {
             // For actual resources from database
-            // Create a temporary link to trigger download
             const link = document.createElement('a');
             link.href = `/storage/${filePath}`;
             link.download = title;
@@ -300,17 +318,21 @@ function downloadResource(type, filePath = null, title = null) {
             link.click();
             document.body.removeChild(link);
             
-            // Show success message
             showNotification(`Downloaded: ${title}`, 'success');
-        } else {
-            // For placeholder categories
-            const messages = {
-                'solar-energy': 'Solar energy guides will be available soon! Check back for installation tips.',
-                'wind-energy': 'Wind energy resources are coming soon! Stay tuned for turbine guides.',
-                'energy-storage': 'Battery storage guides will be ready shortly! Keep going green!'
-            };
+        } else if (resourceMap[type]) {
+            // For placeholder categories with actual resources
+            const resource = resourceMap[type];
+            const link = document.createElement('a');
+            link.href = resource.url;
+            link.download = resource.filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             
-            showNotification(messages[type] || 'Educational resource coming soon!', 'info');
+            showNotification(`Downloaded: ${resource.title}`, 'success');
+        } else {
+            // For any remaining placeholder categories
+            showNotification('Educational resource coming soon!', 'info');
         }
         
         // Reset button

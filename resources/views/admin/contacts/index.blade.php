@@ -1,5 +1,5 @@
 <x-layout title="Admin Contacts">
-    <div class="max-w-5xl min-h-screen mx-auto py-10">
+    <div class="max-w-5xl min-h-screen mx-auto py-10 px-4">
 
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-3xl font-bold tracking-tight">Contact messages</h1>

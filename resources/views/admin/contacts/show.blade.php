@@ -1,5 +1,5 @@
 <x-layout title="Contact message">
-    <div class="max-w-2xl mx-auto py-10 space-y-4">
+    <div class="max-w-2xl mx-auto py-10 px-4 space-y-4">
         <div class="flex items-center justify-between gap-4">
             <h1 class="text-3xl font-semibold">Contact message</h1>
             <a href="{{ route('admin.contacts.edit', $contact) }}" class="btn btn-sm btn-outline">
