@@ -1,59 +1,273 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Food Fusion
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive web application that combines culinary exploration with renewable energy education, built with Laravel 11.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Recipe Management**: Browse, search, and filter recipes with detailed instructions
+- **Community Cookbook**: Share and discover user-generated recipes with social features
+- **Resource Library**: Download culinary guides and renewable energy educational materials
+- **User Authentication**: Secure registration, login, and account management
+- **Contact System**: Multi-channel communication with inquiry categorization
+- **Responsive Design**: Mobile-first approach using Tailwind CSS and DaisyUI
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.2+
+- MySQL 8.0+ or MariaDB 10.3+
+- Composer
+- Node.js 18+ (for asset compilation)
+- Git
 
-## Learning Laravel
+## Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 1. Clone the Repository
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+git clone https://github.com/KhantZaya/food-fusion.git
+cd food-fusion
+```
 
-## Laravel Sponsors
+### 2. Install Dependencies
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+# Install PHP dependencies
+composer install
 
-### Premium Partners
+# Install Node.js dependencies
+npm install
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 3. Environment Configuration
+
+```bash
+# Copy environment file
+cp .env.example .env
+
+# Generate application key
+php artisan key:generate
+```
+
+### 4. Database Setup
+
+Edit your `.env` file with your database credentials:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=food_fusion
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
+
+### 5. Database Migration
+
+```bash
+# Run database migrations
+php artisan migrate
+```
+
+### 6. Database Seeding
+
+```bash
+# Seed the database with initial data
+php artisan db:seed
+
+# Or run specific seeders
+php artisan db:seed --class=UserSeeder
+php artisan db:seed --class=ResourceSeeder
+```
+
+### 7. Asset Compilation
+
+```bash
+# Compile frontend assets
+npm run build
+
+# For development with hot reloading
+npm run dev
+```
+
+### 8. Storage Link
+
+```bash
+# Create symbolic link for public storage
+php artisan storage:link
+```
+
+## Running the Application
+
+### Development Server
+
+```bash
+# Start Laravel development server
+php artisan serve
+
+# Application will be available at http://localhost:8000
+```
+
+### Alternative Development Setup
+
+```bash
+# Start development server with host and port
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+## Available Seeders
+
+The application includes several database seeders:
+
+### UserSeeder
+- Creates default admin and user accounts
+- Sets up initial user roles and permissions
+
+```bash
+php artisan db:seed --class=UserSeeder
+```
+
+### ResourceSeeder
+- Populates culinary and educational resources
+- Sets up resource categories and file references
+
+```bash
+php artisan db:seed --class=ResourceSeeder
+```
+
+### DatabaseSeeder (All Seeders)
+- Runs all available seeders in sequence
+
+```bash
+php artisan db:seed
+```
+
+## Default Accounts
+
+After running the UserSeeder, you can use these default accounts:
+
+**Admin Account:**
+- Email: admin@example.com
+- Password: password
+
+**User Account:**
+- Email: user@example.com
+- Password: password
+
+## File Structure
+
+```
+food-fusion/
+├── app/
+│   ├── Http/Controllers/     # Application controllers
+│   ├── Models/              # Eloquent models
+│   └── Services/            # Business logic services
+├── database/
+│   ├── migrations/          # Database migrations
+│   └── seeders/             # Database seeders
+├── resources/
+│   ├── views/               # Blade templates
+│   └── js/                  # JavaScript files
+├── public/
+│   └── storage/             # Publicly accessible files
+└── storage/
+    └── app/                 # Application file storage
+```
+
+## Common Commands
+
+### Database Operations
+
+```bash
+# Create a new migration
+php artisan make:migration create_table_name
+
+# Run migrations
+php artisan migrate
+
+# Rollback migrations
+php artisan migrate:rollback
+
+# Fresh migration (drops all tables)
+php artisan migrate:fresh
+
+# Create a new seeder
+php artisan make:seeder SeederName
+```
+
+### Development Commands
+
+```bash
+# Clear application cache
+php artisan cache:clear
+
+# Clear configuration cache
+php artisan config:clear
+
+# Clear view cache
+php artisan view:clear
+
+# Clear all caches
+php artisan optimize:clear
+
+# Show routes
+php artisan route:list
+```
+
+### Asset Management
+
+```bash
+# Install new npm package
+npm install package-name
+
+# Build assets for production
+npm run build
+
+# Watch for changes during development
+npm run dev
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Error**
+   - Verify database credentials in `.env`
+   - Ensure database server is running
+   - Check database exists and user has proper permissions
+
+2. **Storage Link Issues**
+   - Run `php artisan storage:link`
+   - Ensure `public/storage` directory exists
+   - Check file permissions
+
+3. **Asset Compilation Errors**
+   - Run `npm install` to install dependencies
+   - Clear cache with `php artisan optimize:clear`
+   - Rebuild assets with `npm run build`
+
+4. **Permission Issues**
+   - Set proper permissions for storage directories:
+   ```bash
+   chmod -R 775 storage bootstrap/cache
+   ```
+
+### Debug Mode
+
+Enable debug mode in `.env` for development:
+
+```env
+APP_DEBUG=true
+APP_ENV=local
+```
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the MIT license.
