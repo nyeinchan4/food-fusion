@@ -1,0 +1,1446 @@
+Description: |
+  Food-Fusion infrastructure — VPC with public/private subnets across two AZs,
+  NAT Gateway, RDS MySQL in private subnet, ECS Fargate cluster with three services:
+  frontend (Nginx), backend (Laravel PHP-FPM), and queue worker (Laravel queue:work).
+  Includes a full AWS CodePipeline CI/CD pipeline sourced from GitHub via CodeStar
+  Connections, with CodeBuild projects for Docker image builds and ECS rolling deploys.
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+
+  ProjectName:
+    Type: String
+    Description: Project name identifier
+    Default: food-fusion
+
+  VpcCIDR:
+    Description: IP range (CIDR) for this VPC
+    Type: String
+    Default: 12.10.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: IP range for the public subnet in AZ1
+    Type: String
+    Default: 12.10.0.0/24
+
+  PublicSubnet2CIDR:
+    Description: IP range for the public subnet in AZ2
+    Type: String
+    Default: 12.10.1.0/24
+
+  PrivateSubnet1CIDR:
+    Description: IP range for the private subnet in AZ1
+    Type: String
+    Default: 12.10.2.0/24
+
+  PrivateSubnet2CIDR:
+    Description: IP range for the private subnet in AZ2
+    Type: String
+    Default: 12.10.3.0/24
+
+  DataSubnet1CIDR:
+    Description: |
+      IP range for the isolated data subnet in AZ1 (RDS only).
+      No internet route — completely isolated from app and public tiers.
+    Type: String
+    Default: 12.10.4.0/24
+
+  DataSubnet2CIDR:
+    Description: |
+      IP range for the isolated data subnet in AZ2 (RDS only).
+      No internet route — completely isolated from app and public tiers.
+    Type: String
+    Default: 12.10.5.0/24
+
+  # ── RDS Parameters ────────────────────────────────────────────────────────────
+  DBName:
+    Description: Database name
+    Type: String
+    Default: food_fusion
+
+  DBUsername:
+    Description: Master DB username
+    Type: String
+    Default: food_user
+    NoEcho: true
+
+  DBPasswordSSMPath:
+    Description: |
+      SSM Parameter Store path for the RDS master password (SecureString).
+      Example: /food-fusion/prod/db/password
+      Create it first with: aws ssm put-parameter --name "/food-fusion/prod/db/password" --value "<password>" --type SecureString
+    Type: String
+    Default: /food-fusion/prod/db/password
+
+  DBInstanceClass:
+    Description: RDS instance type
+    Type: String
+    Default: db.t3.micro
+
+  DBAllocatedStorage:
+    Description: Allocated storage in GB
+    Type: Number
+    Default: 20
+
+  DBEngineVersion:
+    Description: MySQL engine version
+    Type: String
+    Default: "8.0"
+
+  # ── ECR Image URIs ────────────────────────────────────────────────────────────
+  FrontendImageUri:
+    Description: ECR image URI for the frontend (Nginx + Vite assets)
+    Type: String
+    Default: "nginx:latest"
+
+  BackendImageUri:
+    Description: ECR image URI for the backend (Laravel PHP-FPM)
+    Type: String
+    Default: "php:8.4-fpm-alpine"
+
+  QueueImageUri:
+    Description: ECR image URI for the queue worker (same backend image)
+    Type: String
+    Default: "php:8.4-fpm-alpine"
+
+  # ── App secrets stored in SSM Parameter Store ───────────────────────────────
+  AppKeySSMPath:
+    Description: |
+      SSM Parameter Store path for the Laravel APP_KEY (SecureString).
+      Generate the key with: php artisan key:generate --show
+      Then store it with: aws ssm put-parameter --name "/food-fusion/prod/app/key" --value "base64:..." --type SecureString
+    Type: String
+    Default: /food-fusion/prod/app/key
+
+  # ── CI/CD — GitHub & CodePipeline ────────────────────────────────────────────
+  GitHubOwner:
+    Description: GitHub repository owner (username or organisation)
+    Type: String
+    Default: nyeinchan4
+
+  GitHubRepo:
+    Description: GitHub repository name (without owner prefix)
+    Type: String
+    Default: food-fusion
+
+  GitHubBranch:
+    Description: Branch to trigger the pipeline on
+    Type: String
+    Default: main
+
+  # NOTE: Create the CodeStar Connection in the AWS Console (Developer Tools →
+  # Settings → Connections), install the GitHub app, then paste the ARN below.
+  # It must be in "Available" state before the pipeline runs.
+  CodeStarConnectionArn:
+    Description: |
+      ARN of the AWS CodeStar Connection to GitHub.
+      Create one at: AWS Console → Developer Tools → Settings → Connections
+    Type: String
+    Default: arn:aws:codeconnections:eu-north-1:293406303338:connection/6756251a-bdf8-4cb7-afc9-d33779b725a6
+
+  FrontendECRRepoName:
+    Description: ECR repository name for the frontend image
+    Type: String
+    Default: food-fusion-frontend
+
+  BackendECRRepoName:
+    Description: ECR repository name for the backend image
+    Type: String
+    Default: food-fusion-backend
+
+  # ── Domain ────────────────────────────────────────────────────────────────────
+  DomainName:
+    Description: Primary domain name for the application.
+    Type: String
+    Default: nexusunified.online
+
+  # Pre-existing Route 53 public hosted zone for nexusunified.online.
+  # IMPORTANT: this must be the zone whose NS records are delegated at your
+  # registrar. CloudFormation will automatically insert the ACM CNAME validation
+  # records into THIS zone so the certificate can be issued without manual steps.
+  # Zone Z03412101NYGRGVC7I3KZ = registrar-delegated (correct).
+  # Zone Z0914598CLKXKKQM5T5Q = duplicate created by an earlier CFN run (delete it).
+  HostedZoneId:
+    Description: |
+      ID of the existing Route 53 public hosted zone for DomainName.
+      Must already exist and be delegated at the registrar before deploying.
+    Type: AWS::Route53::HostedZone::Id
+    Default: Z03412101NYGRGVC7I3KZ
+
+Resources:
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # VPC & NETWORKING
+  # ════════════════════════════════════════════════════════════════════════════════
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-vpc"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-igw"
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # ── Public Subnets ────────────────────────────────────────────────────────────
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Public Subnet (AZ1)"
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Public Subnet (AZ2)"
+
+  # ── Private Subnets ───────────────────────────────────────────────────────────
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Private Subnet (AZ1)"
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Private Subnet (AZ2)"
+
+  # ── NAT Gateway (single, in AZ1 to reduce cost) ───────────────────────────────
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-nat-gw"
+
+  # ── Route Tables ──────────────────────────────────────────────────────────────
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Public Routes"
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Private Routes (AZ1)"
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Private Routes (AZ2)"
+
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+  # ── Data Subnets (isolated DB tier — no internet route) ───────────────────────
+  # These subnets sit in a third tier below the app/private subnets.
+  # They host only the RDS instance; no NAT or IGW route is attached,
+  # making this the most restricted layer of the network.
+  DataSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref DataSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Data Subnet (AZ1)"
+        - Key: Tier
+          Value: data
+
+  DataSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref DataSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Data Subnet (AZ2)"
+        - Key: Tier
+          Value: data
+
+  # Isolated route tables for data subnets — intentionally have NO default route.
+  # RDS is reached only from within the VPC via security-group rules.
+  DataRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Data Routes (AZ1)"
+
+  DataSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DataRouteTable1
+      SubnetId: !Ref DataSubnet1
+
+  DataRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName} Data Routes (AZ2)"
+
+  DataSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DataRouteTable2
+      SubnetId: !Ref DataSubnet2
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # SECURITY GROUPS
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  # ALB — accepts HTTP from the internet
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "${EnvironmentName}-${ProjectName}-alb-sg"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-alb-sg"
+
+  # Frontend ECS tasks — accept port 80 only from ALB
+  FrontendTaskSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "${EnvironmentName}-${ProjectName}-frontend-task-sg"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-frontend-task-sg"
+
+  # Backend ECS tasks — accept port 9000 only from frontend tasks
+  BackendTaskSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "${EnvironmentName}-${ProjectName}-backend-task-sg"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9000
+          ToPort: 9000
+          SourceSecurityGroupId: !Ref FrontendTaskSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-backend-task-sg"
+
+  # Queue worker tasks — no inbound traffic needed (pulls jobs from DB)
+  QueueTaskSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "${EnvironmentName}-${ProjectName}-queue-task-sg"
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-queue-task-sg"
+
+  # RDS — accept MySQL only from backend and queue worker tasks
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "${EnvironmentName}-${ProjectName}-rds-sg"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref BackendTaskSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref QueueTaskSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-rds-sg"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # RDS — MySQL in Private Subnets
+  # ════════════════════════════════════════════════════════════════════════════════
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub "${EnvironmentName}-${ProjectName} RDS Data Subnet Group"
+      SubnetIds:
+        - !Ref DataSubnet1
+        - !Ref DataSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-rds-subnet-group"
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot   # protect data on stack delete
+    Properties:
+      DBInstanceIdentifier: !Sub "${EnvironmentName}-${ProjectName}-rds"
+      DBName: !Ref DBName
+      DBInstanceClass: !Ref DBInstanceClass
+      Engine: mysql
+      EngineVersion: !Ref DBEngineVersion
+      MasterUsername: !Ref DBUsername
+      # Reads the SecureString value from SSM at CloudFormation deploy time.
+      # The SSM parameter must already exist before deploying this stack.
+      MasterUserPassword: !Sub "{{resolve:ssm-secure:${DBPasswordSSMPath}}}"
+      AllocatedStorage: !Ref DBAllocatedStorage
+      StorageType: gp3
+      StorageEncrypted: true
+      MultiAZ: false           # set to true for production HA
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+      BackupRetentionPeriod: 7
+      DeletionProtection: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-rds"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # IAM ROLES
+  # ════════════════════════════════════════════════════════════════════════════════
+  CustomECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EnvironmentName}-${ProjectName}-ecs-execution-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # Allows pulling images from ECR and writing CloudWatch logs
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-ssm-read-policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Allow ECS to fetch SecureString parameters (DB_PASSWORD, APP_KEY) at task startup
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DBPasswordSSMPath}"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppKeySSMPath}"
+              # Allow KMS decryption for SecureString parameters encrypted with the default SSM key
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/alias/aws/ssm"
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EnvironmentName}-${ProjectName}-ecs-task-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-ecs-exec-policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Enable ECS Exec (SSM session manager into containers)
+              - Effect: Allow
+                Action:
+                  - ssmmessages:CreateControlChannel
+                  - ssmmessages:CreateDataChannel
+                  - ssmmessages:OpenControlChannel
+                  - ssmmessages:OpenDataChannel
+                Resource: "*"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # CLOUDWATCH LOG GROUP
+  # ════════════════════════════════════════════════════════════════════════════════
+  ECSLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${EnvironmentName}-${ProjectName}"
+      RetentionInDays: 14
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # ECS CLUSTER
+  # ════════════════════════════════════════════════════════════════════════════════
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${EnvironmentName}-${ProjectName}-ecs-cluster"
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 1
+      Configuration:
+        ExecuteCommandConfiguration:
+          Logging: OVERRIDE
+          LogConfiguration:
+            CloudWatchLogGroupName: !Ref ECSLogGroup
+            CloudWatchEncryptionEnabled: false
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # TASK DEFINITIONS
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  # ── Frontend Task Definition (Nginx + Vite built assets) ─────────────────────
+  FrontendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EnvironmentName}-${ProjectName}-frontend-task"
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ExecutionRoleArn: !GetAtt CustomECSExecutionRole.Arn
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        - Name: !Sub "${EnvironmentName}-${ProjectName}-frontend"
+          Image: !Ref FrontendImageUri
+          Cpu: 256
+          Memory: 512
+          Essential: true
+          PortMappings:
+            - ContainerPort: 80
+              HostPort: 80
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ECSLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: frontend
+
+  # ── Backend Task Definition (Laravel PHP-FPM) ─────────────────────────────────
+  BackendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EnvironmentName}-${ProjectName}-backend-task"
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ExecutionRoleArn: !GetAtt CustomECSExecutionRole.Arn
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        - Name: !Sub "${EnvironmentName}-${ProjectName}-backend"
+          Image: !Ref BackendImageUri
+          Cpu: 512
+          Memory: 1024
+          Essential: true
+          PortMappings:
+            - ContainerPort: 9000
+              HostPort: 9000
+              Protocol: tcp
+          Environment:
+            - Name: APP_ENV
+              Value: production
+            - Name: APP_DEBUG
+              Value: "false"
+            - Name: DB_CONNECTION
+              Value: mysql
+            - Name: DB_HOST
+              Value: !GetAtt RDSInstance.Endpoint.Address
+            - Name: DB_PORT
+              Value: "3306"
+            - Name: DB_DATABASE
+              Value: !Ref DBName
+            - Name: DB_USERNAME
+              Value: !Ref DBUsername
+            - Name: CACHE_STORE
+              Value: database
+            - Name: SESSION_DRIVER
+              Value: database
+            - Name: QUEUE_CONNECTION
+              Value: database
+          # ECS fetches secrets from SSM at container startup — never stored in plain-text
+          Secrets:
+            - Name: APP_KEY
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppKeySSMPath}"
+            - Name: DB_PASSWORD
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DBPasswordSSMPath}"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ECSLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: backend
+
+  # ── Queue Worker Task Definition (Laravel queue:work) ─────────────────────────
+  QueueTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EnvironmentName}-${ProjectName}-queue-task"
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ExecutionRoleArn: !GetAtt CustomECSExecutionRole.Arn
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        - Name: !Sub "${EnvironmentName}-${ProjectName}-queue"
+          Image: !Ref QueueImageUri
+          Cpu: 256
+          Memory: 512
+          Essential: true
+          # Override CMD to run the queue worker instead of php-fpm
+          Command:
+            - "php"
+            - "artisan"
+            - "queue:work"
+            - "--tries=3"
+            - "--timeout=90"
+            - "--sleep=3"
+            - "--max-time=3600"
+          Environment:
+            - Name: APP_ENV
+              Value: production
+            - Name: APP_DEBUG
+              Value: "false"
+            - Name: DB_CONNECTION
+              Value: mysql
+            - Name: DB_HOST
+              Value: !GetAtt RDSInstance.Endpoint.Address
+            - Name: DB_PORT
+              Value: "3306"
+            - Name: DB_DATABASE
+              Value: !Ref DBName
+            - Name: DB_USERNAME
+              Value: !Ref DBUsername
+            - Name: CACHE_STORE
+              Value: database
+            - Name: SESSION_DRIVER
+              Value: database
+            - Name: QUEUE_CONNECTION
+              Value: database
+          # ECS fetches secrets from SSM at container startup — never stored in plain-text
+          Secrets:
+            - Name: APP_KEY
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppKeySSMPath}"
+            - Name: DB_PASSWORD
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DBPasswordSSMPath}"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ECSLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: queue
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # ACM CERTIFICATE — CloudFormation-managed, DNS-validated
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  # CFN requests the cert and AUTOMATICALLY writes the two CNAME validation records
+  # into the HostedZoneId (Z03412101NYGRGVC7I3KZ) — the zone already delegated at
+  # the registrar. No manual DNS steps needed. Stack will pause here (~2-5 min)
+  # until ACM confirms the cert is ISSUED, then proceed to the HTTPS listener.
+  ACMCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      SubjectAlternativeNames:
+        - !Sub "www.${DomainName}"
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+        - DomainName: !Sub "www.${DomainName}"
+          HostedZoneId: !Ref HostedZoneId
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-acm-cert"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # ROUTE 53 — ALIAS RECORDS (hosted zone pre-exists, referenced via parameter)
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  # Apex A-record — nexusunified.online → ALB
+  ApexAliasRecord:
+    Type: AWS::Route53::RecordSet
+    DependsOn: ApplicationLoadBalancer
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        EvaluateTargetHealth: true
+        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+
+  # www A-record — www.nexusunified.online → ALB
+  WwwAliasRecord:
+    Type: AWS::Route53::RecordSet
+    DependsOn: ApplicationLoadBalancer
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub "www.${DomainName}"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        EvaluateTargetHealth: true
+        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # APPLICATION LOAD BALANCER
+  # ════════════════════════════════════════════════════════════════════════════════
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-alb"
+      Scheme: internet-facing
+      Type: application
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-alb"
+
+  # Target group for the frontend service
+  FrontendTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-fe-tg"
+      VpcId: !Ref VPC
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  # HTTP (port 80) — permanently redirect all traffic to HTTPS
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: '443'
+            StatusCode: HTTP_301
+
+  # HTTPS (port 443) — terminate TLS with the CFN-managed ACM cert (waits for ISSUED)
+  # and forward to the frontend target group.
+  ALBListenerHTTPS:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn: ACMCertificate
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      Certificates:
+        - CertificateArn: !Ref ACMCertificate
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref FrontendTargetGroup
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # ECS SERVICES
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  # ── Frontend Service (public-facing via ALB) ──────────────────────────────────
+  FrontendECSService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - ALBListener
+      - ALBListenerHTTPS
+    Properties:
+      ServiceName: !Sub "${EnvironmentName}-${ProjectName}-frontend-svc"
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref FrontendTaskDefinition
+      EnableExecuteCommand: true
+      DesiredCount: 1
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+          Base: 1
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          SecurityGroups:
+            - !Ref FrontendTaskSecurityGroup
+      LoadBalancers:
+        - ContainerName: !Sub "${EnvironmentName}-${ProjectName}-frontend"
+          ContainerPort: 80
+          TargetGroupArn: !Ref FrontendTargetGroup
+
+  # ── Backend Service (internal, no ALB) ───────────────────────────────────────
+  BackendECSService:
+    Type: AWS::ECS::Service
+    DependsOn: RDSInstance
+    Properties:
+      ServiceName: !Sub "${EnvironmentName}-${ProjectName}-backend-svc"
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref BackendTaskDefinition
+      EnableExecuteCommand: true
+      DesiredCount: 1
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+          Base: 1
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          SecurityGroups:
+            - !Ref BackendTaskSecurityGroup
+
+  # ── Queue Worker Service (internal, no ALB, no inbound) ──────────────────────
+  QueueECSService:
+    Type: AWS::ECS::Service
+    DependsOn: RDSInstance
+    Properties:
+      ServiceName: !Sub "${EnvironmentName}-${ProjectName}-queue-svc"
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref QueueTaskDefinition
+      EnableExecuteCommand: true
+      DesiredCount: 1
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE_SPOT   # queue workers are safe to run on Spot
+          Weight: 1
+          Base: 1
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          SecurityGroups:
+            - !Ref QueueTaskSecurityGroup
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # ECR REPOSITORIES
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  FrontendECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref FrontendECRRepoName
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep only the last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-frontend-ecr"
+
+  BackendECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref BackendECRRepoName
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep only the last 10 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-backend-ecr"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # CI/CD — S3 ARTIFACT BUCKET
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  PipelineArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${EnvironmentName}-${ProjectName}-pipeline-artifacts-${AWS::AccountId}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldArtifacts
+            Status: Enabled
+            ExpirationInDays: 30
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-pipeline-artifacts"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # CI/CD — IAM ROLES
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  # Role used by all CodeBuild projects
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EnvironmentName}-${ProjectName}-codebuild-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-codebuild-policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # CloudWatch Logs — write build logs
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+              # S3 — read/write pipeline artifacts
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !GetAtt PipelineArtifactBucket.Arn
+                  - !Sub "${PipelineArtifactBucket.Arn}/*"
+              # ECR — push images
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                Resource:
+                  - !GetAtt FrontendECRRepository.Arn
+                  - !GetAtt BackendECRRepository.Arn
+              # CodeBuild — report groups (optional but useful)
+              - Effect: Allow
+                Action:
+                  - codebuild:CreateReportGroup
+                  - codebuild:CreateReport
+                  - codebuild:UpdateReport
+                  - codebuild:BatchPutTestCases
+                Resource: !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*"
+
+  # Role used by CodePipeline
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EnvironmentName}-${ProjectName}-codepipeline-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-codepipeline-policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # CodeStar Connection — use GitHub source
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref CodeStarConnectionArn
+              # S3 — artifact store
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:GetBucketVersioning
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt PipelineArtifactBucket.Arn
+                  - !Sub "${PipelineArtifactBucket.Arn}/*"
+              # CodeBuild — start/check builds
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - codebuild:StopBuild
+                Resource:
+                  - !GetAtt FrontendCodeBuildProject.Arn
+                  - !GetAtt BackendCodeBuildProject.Arn
+              # ECS — rolling deploy (update service image)
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:DescribeTaskDefinition
+                  - ecs:DescribeTasks
+                  - ecs:ListTasks
+                  - ecs:RegisterTaskDefinition
+                  - ecs:UpdateService
+                Resource: "*"
+              # IAM — pass roles to ECS during task-def registration
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt CustomECSExecutionRole.Arn
+                  - !GetAtt ECSTaskRole.Arn
+              # CloudWatch Events (EventBridge) — used internally by pipeline
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: "*"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # CI/CD — CODEBUILD PROJECTS
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  # CodeBuild project — builds the frontend Docker image and pushes to ECR
+  FrontendCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-frontend-build"
+      Description: Builds the Nginx + Vite frontend image and pushes to ECR
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        PrivilegedMode: true    # required to run Docker daemon inside CodeBuild
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: ECR_REPO_URI
+            Value: !GetAtt FrontendECRRepository.RepositoryUri
+          - Name: IMAGE_TAG
+            Value: latest
+          # Full container name must match the task definition ContainerDefinition name
+          - Name: CONTAINER_NAME
+            Value: !Sub "${EnvironmentName}-${ProjectName}-frontend"
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-frontend.yml
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Sub "/codebuild/${EnvironmentName}-${ProjectName}-frontend-build"
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-frontend-build"
+
+  # CodeBuild project — builds the backend PHP-FPM image and pushes to ECR
+  BackendCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-backend-build"
+      Description: Builds the Laravel PHP-FPM backend image and pushes to ECR
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        PrivilegedMode: true    # required to run Docker daemon inside CodeBuild
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: ECR_REPO_URI
+            Value: !GetAtt BackendECRRepository.RepositoryUri
+          - Name: IMAGE_TAG
+            Value: latest
+          # Full container name must match the task definition ContainerDefinition name
+          - Name: CONTAINER_NAME
+            Value: !Sub "${EnvironmentName}-${ProjectName}-backend"
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-backend.yml
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Sub "/codebuild/${EnvironmentName}-${ProjectName}-backend-build"
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-backend-build"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # CI/CD — CODEPIPELINE
+  # ════════════════════════════════════════════════════════════════════════════════
+
+  FoodFusionPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-pipeline"
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref PipelineArtifactBucket
+      RestartExecutionOnUpdate: true
+      Stages:
+
+        # ── Stage 1: Source — pull from GitHub via CodeStar Connection ────────
+        - Name: Source
+          Actions:
+            - Name: GitHub_Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnectionArn
+                FullRepositoryId: !Sub "${GitHubOwner}/${GitHubRepo}"
+                BranchName: !Ref GitHubBranch
+                OutputArtifactFormat: CODE_ZIP
+                DetectChanges: true
+              OutputArtifacts:
+                - Name: SourceOutput
+              RunOrder: 1
+
+        # ── Stage 2: Build — run both CodeBuild projects in parallel ──────────
+        - Name: Build
+          Actions:
+            - Name: Build_Frontend
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref FrontendCodeBuildProject
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: FrontendBuildOutput
+              RunOrder: 1
+
+            - Name: Build_Backend
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref BackendCodeBuildProject
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BackendBuildOutput
+              RunOrder: 1
+
+        # ── Stage 3: Deploy — rolling update of ECS services ──────────────────
+        - Name: Deploy
+          Actions:
+            - Name: Deploy_Frontend
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: ECS
+                Version: '1'
+              Configuration:
+                ClusterName: !Ref ECSCluster
+                ServiceName: !Sub "${EnvironmentName}-${ProjectName}-frontend-svc"
+                FileName: imagedefinitions.json
+              InputArtifacts:
+                - Name: FrontendBuildOutput
+              RunOrder: 1
+
+            - Name: Deploy_Backend
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: ECS
+                Version: '1'
+              Configuration:
+                ClusterName: !Ref ECSCluster
+                ServiceName: !Sub "${EnvironmentName}-${ProjectName}-backend-svc"
+                FileName: imagedefinitions.json
+              InputArtifacts:
+                - Name: BackendBuildOutput
+              RunOrder: 1
+
+            # Queue worker uses the same image as the backend.
+            # Re-deploy it after backend so the new image is guaranteed to be available.
+            - Name: Deploy_Queue
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: ECS
+                Version: '1'
+              Configuration:
+                ClusterName: !Ref ECSCluster
+                ServiceName: !Sub "${EnvironmentName}-${ProjectName}-queue-svc"
+                FileName: imagedefinitions.json
+              InputArtifacts:
+                - Name: BackendBuildOutput
+              RunOrder: 2
+
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-pipeline"
+
+# ══════════════════════════════════════════════════════════════════════════════════
+# OUTPUTS
+# ══════════════════════════════════════════════════════════════════════════════════
+Outputs:
+  VPC:
+    Description: ID of the created VPC
+    Value: !Ref VPC
+
+  PublicSubnets:
+    Description: List of public subnets
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]]
+
+  PrivateSubnets:
+    Description: List of private subnets
+    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ]]
+
+  ALBDNSName:
+    Description: Public DNS name of the Application Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-ALBDNSName"
+
+  AppURL:
+    Description: Primary HTTPS URL for the application
+    Value: !Sub "https://${DomainName}"
+
+  WwwURL:
+    Description: www HTTPS URL for the application
+    Value: !Sub "https://www.${DomainName}"
+
+  ACMCertificateArn:
+    Description: ARN of the CFN-managed ACM TLS certificate
+    Value: !Ref ACMCertificate
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-CertArn"
+
+  HostedZoneId:
+    Description: Route 53 Hosted Zone ID for the domain (pre-existing)
+    Value: !Ref HostedZoneId
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-HostedZoneId"
+
+  RDSEndpoint:
+    Description: RDS MySQL endpoint address (private)
+    Value: !GetAtt RDSInstance.Endpoint.Address
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-RDSEndpoint"
+
+  ECSClusterName:
+    Description: Name of the ECS Cluster
+    Value: !Ref ECSCluster
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-ClusterName"
+
+  ExecutionRoleArn:
+    Description: ARN of the ECS Execution Role
+    Value: !GetAtt CustomECSExecutionRole.Arn
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-ExecutionRoleArn"
+
+  FrontendECRRepositoryUri:
+    Description: URI of the Frontend ECR repository
+    Value: !GetAtt FrontendECRRepository.RepositoryUri
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-FrontendECRUri"
+
+  BackendECRRepositoryUri:
+    Description: URI of the Backend ECR repository
+    Value: !GetAtt BackendECRRepository.RepositoryUri
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-BackendECRUri"
+
+  PipelineArtifactBucketName:
+    Description: S3 bucket used by CodePipeline for build artifacts
+    Value: !Ref PipelineArtifactBucket
+
+  CodePipelineUrl:
+    Description: AWS Console URL of the CI/CD pipeline
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codepipeline/pipelines/${FoodFusionPipeline}/view"
+
+  DataSubnets:
+    Description: Comma-separated list of isolated data subnets (RDS tier)
+    Value: !Join [ ",", [ !Ref DataSubnet1, !Ref DataSubnet2 ]]
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-DataSubnets"

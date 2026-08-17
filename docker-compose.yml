@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # MariaDB Database
+  database:
+    image: mariadb:10.11
+    container_name: food_fusion_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secure_root_password}
+      MYSQL_DATABASE: ${DB_DATABASE:-food_fusion}
+      MYSQL_USER: ${DB_USERNAME:-food_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-food}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./food_fusion_database:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "3306:3306"
+    networks:
+      - food_fusion_network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Laravel Backend (PHP-FPM)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: food_fusion_backend
+    restart: unless-stopped
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    environment:
+      APP_NAME: FoodFusion
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: false
+      APP_URL: http://localhost
+      DB_CONNECTION: mysql
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-food_fusion}
+      DB_USERNAME: ${DB_USERNAME:-food_user}
+      DB_PASSWORD: ${DB_PASSWORD:-food}
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+    volumes:
+      - ./storage:/var/www/html/storage
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - food_fusion_network
+    command: >
+      sh -c "
+        php artisan optimize:clear &&
+        php artisan config:cache &&
+        php artisan route:cache &&
+        php artisan view:cache &&
+        php artisan migrate --force &&
+        php artisan storage:link --force &&
+        php-fpm
+      "
+
+  # Queue Worker
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: food_fusion_queue
+    restart: unless-stopped
+    stop_grace_period: 120s
+    stop_signal: SIGTERM
+    environment:
+      APP_NAME: FoodFusion
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: false
+      DB_CONNECTION: mysql
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-food_fusion}
+      DB_USERNAME: ${DB_USERNAME:-food_user}
+      DB_PASSWORD: ${DB_PASSWORD:-food}
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+    volumes:
+      - ./storage:/var/www/html/storage
+    depends_on:
+      database:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - food_fusion_network
+    command: php artisan queue:work --tries=3 --timeout=90 --sleep=3 --max-time=3600
+
+  # Frontend (Nginx serving built assets)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: food_fusion_frontend
+    restart: unless-stopped
+    stop_grace_period: 10s
+    stop_signal: SIGTERM
+    ports:
+      - "80:80"
+    volumes:
+      - ./storage:/var/www/html/storage
+    depends_on:
+      - backend
+    networks:
+      - food_fusion_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mariadb_data:
+    driver: local
+
+networks:
+  food_fusion_network:
+    driver: bridge

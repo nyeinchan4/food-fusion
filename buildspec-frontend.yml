@@ -1,0 +1,52 @@
+# buildspec-frontend.yml
+# Used by the FrontendCodeBuildProject in CodePipeline.
+# Builds the Nginx + Vite assets Docker image and pushes it to ECR.
+# Outputs imagedefinitions.json so CodePipeline can do a rolling ECS deploy.
+
+version: 0.2
+
+env:
+  variables:
+    # These are injected by CodeBuild environment variables defined in CFN:
+    #   AWS_DEFAULT_REGION, AWS_ACCOUNT_ID, ECR_REPO_URI, IMAGE_TAG (=latest)
+    #   CONTAINER_NAME — full ECS container name e.g. prod-food-fusion-frontend
+
+phases:
+  pre_build:
+    commands:
+      - echo "=== Logging in to Amazon ECR ==="
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" |
+          docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+
+      # Use the short Git commit SHA as an immutable tag for traceability
+      - COMMIT_TAG=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-8)
+      - echo "Building commit $COMMIT_TAG"
+
+  build:
+    commands:
+      - echo "=== Building frontend Docker image ==="
+      - docker build
+          -f Dockerfile.frontend
+          -t "$ECR_REPO_URI:$COMMIT_TAG"
+          -t "$ECR_REPO_URI:$IMAGE_TAG"
+          .
+
+  post_build:
+    commands:
+      - echo "=== Pushing image to ECR ==="
+      - docker push "$ECR_REPO_URI:$COMMIT_TAG"
+      - docker push "$ECR_REPO_URI:$IMAGE_TAG"
+
+      # Write imagedefinitions.json expected by the ECS deploy action.
+      # The name must match the ECS task-definition container name.
+      - echo "=== Writing imagedefinitions.json ==="
+      - |
+        printf '[{"name":"%s","imageUri":"%s"}]' \
+          "${CONTAINER_NAME}" \
+          "${ECR_REPO_URI}:${COMMIT_TAG}" \
+          > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

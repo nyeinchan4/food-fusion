@@ -1,0 +1,55 @@
+# buildspec-backend.yml
+# Used by the BackendCodeBuildProject in CodePipeline.
+# Builds the Laravel PHP-FPM backend Docker image and pushes it to ECR.
+# The queue worker service shares this same image — CodePipeline deploys
+# both the backend service and the queue service from this single artifact.
+# Outputs imagedefinitions.json so CodePipeline can do a rolling ECS deploy.
+
+version: 0.2
+
+env:
+  variables:
+    # These are injected by CodeBuild environment variables defined in CFN:
+    #   AWS_DEFAULT_REGION, AWS_ACCOUNT_ID, ECR_REPO_URI, IMAGE_TAG (=latest)
+    #   CONTAINER_NAME — full ECS container name e.g. prod-food-fusion-backend
+
+phases:
+  pre_build:
+    commands:
+      - echo "=== Logging in to Amazon ECR ==="
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" |
+          docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+
+      # Use the short Git commit SHA as an immutable tag for traceability
+      - COMMIT_TAG=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-8)
+      - echo "Building commit $COMMIT_TAG"
+
+  build:
+    commands:
+      - echo "=== Building backend Docker image ==="
+      - docker build
+          -f Dockerfile.backend
+          -t "$ECR_REPO_URI:$COMMIT_TAG"
+          -t "$ECR_REPO_URI:$IMAGE_TAG"
+          .
+
+  post_build:
+    commands:
+      - echo "=== Pushing image to ECR ==="
+      - docker push "$ECR_REPO_URI:$COMMIT_TAG"
+      - docker push "$ECR_REPO_URI:$IMAGE_TAG"
+
+      # imagedefinitions.json for the backend ECS service deploy.
+      # The queue worker Deploy_Queue action also consumes this artifact
+      # (it uses the same image; only the container name differs in its task def).
+      - echo "=== Writing imagedefinitions.json ==="
+      - |
+        printf '[{"name":"%s","imageUri":"%s"}]' \
+          "${CONTAINER_NAME}" \
+          "${ECR_REPO_URI}:${COMMIT_TAG}" \
+          > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
