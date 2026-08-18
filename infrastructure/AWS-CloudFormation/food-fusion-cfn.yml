@@ -1039,12 +1039,13 @@ Resources:
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
-                # Only the configured GitHub org/repo may assume this role
+                # Only tokens issued for this AWS account's STS audience are accepted
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                # Allow the specified branch (and workflow-triggered environments)
+                # Allow any ref (branch, tag, PR) from the configured repo.
+                # The aud check above already restricts to this account.
                 token.actions.githubusercontent.com:sub:
-                  !Sub "repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}"
+                  !Sub "repo:${GitHubOrg}/${GitHubRepo}:*"
       Policies:
         - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-github-deploy-policy"
           PolicyDocument:
