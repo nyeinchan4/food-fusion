@@ -38,7 +38,7 @@ RUN chown -R www-data:www-data /var/www/html \
 RUN APP_KEY=base64:dummy composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Re-generate the optimised autoload classmap (safe — no artisan calls)
-RUN composer dump-autoload --optimize
+RUN composer dump-autoload --optimize --no-scripts
 
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
