@@ -32,11 +32,11 @@ permissions:
 env:
   AWS_REGION: ap-southeast-1
   ECR_REPO_NAME: food-fusion-backend
-  ECS_CLUSTER: prod-food-fusion-cluster           # update if your cluster name differs
-  BACKEND_SERVICE: prod-food-fusion-backend-svc   # backend ECS service name
-  QUEUE_SERVICE: prod-food-fusion-queue-svc       # queue worker ECS service name
-  BACKEND_CONTAINER: prod-food-fusion-backend     # must match task def container name
-  QUEUE_CONTAINER: prod-food-fusion-queue         # must match task def container name
+  ECS_CLUSTER: prod-food-fusion-ecs-cluster
+  BACKEND_SERVICE: prod-food-fusion-backend-svc
+  QUEUE_SERVICE: prod-food-fusion-queue-svc
+  BACKEND_CONTAINER: prod-food-fusion-backend
+  QUEUE_CONTAINER: prod-food-fusion-queue
 
 jobs:
   build-and-deploy:

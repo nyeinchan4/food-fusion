@@ -28,9 +28,9 @@ permissions:
 env:
   AWS_REGION: ap-southeast-1
   ECR_REPO_NAME: food-fusion-frontend
-  ECS_CLUSTER: prod-food-fusion-cluster          # update if your cluster name differs
-  ECS_SERVICE: prod-food-fusion-frontend-svc     # update if your service name differs
-  CONTAINER_NAME: prod-food-fusion-frontend      # must match task definition container name
+  ECS_CLUSTER: prod-food-fusion-ecs-cluster
+  ECS_SERVICE: prod-food-fusion-frontend-svc
+  CONTAINER_NAME: prod-food-fusion-frontend
 
 jobs:
   build-and-deploy:
