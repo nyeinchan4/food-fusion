@@ -32,9 +32,12 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# --no-scripts skips post-autoload-dump (php artisan package:discover) which
+# requires a real .env / DB connection that doesn't exist at build time.
+# APP_KEY is set to a dummy value so artisan doesn't error on key checks.
+RUN APP_KEY=base64:dummy composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-# Generate optimized autoload files
+# Re-generate the optimised autoload classmap (safe — no artisan calls)
 RUN composer dump-autoload --optimize
 
 # Expose port 9000 for PHP-FPM
