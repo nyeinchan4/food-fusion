@@ -624,6 +624,11 @@ Resources:
             - ContainerPort: 80
               HostPort: 80
               Protocol: tcp
+          Environment:
+            # BACKEND_HOST tells Nginx where to find PHP-FPM via Cloud Map DNS.
+            # Resolves to the backend task's private IP via the private namespace.
+            - Name: BACKEND_HOST
+              Value: !Sub "backend.${ProjectName}.local"
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -899,6 +904,28 @@ Resources:
           ContainerPort: 80
           TargetGroupArn: !Ref FrontendTargetGroup
 
+  # ── Cloud Map: Private DNS namespace for ECS service discovery ───────────────
+  # Gives backend.food-fusion.local → backend task private IP
+  ServiceDiscoveryNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: !Sub "${ProjectName}.local"
+      Vpc: !Ref VPC
+      Description: !Sub "Private DNS namespace for ${ProjectName} ECS services"
+
+  BackendServiceDiscovery:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Name: backend
+      NamespaceId: !Ref ServiceDiscoveryNamespace
+      DnsConfig:
+        RoutingPolicy: MULTIVALUE
+        DnsRecords:
+          - Type: A
+            TTL: 10
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+
   # ── Backend Service (internal, no ALB) ───────────────────────────────────────
   BackendECSService:
     Type: AWS::ECS::Service
@@ -921,6 +948,9 @@ Resources:
             - !Ref PrivateSubnet2
           SecurityGroups:
             - !Ref BackendTaskSecurityGroup
+      ServiceRegistries:
+        - RegistryArn: !GetAtt BackendServiceDiscovery.Arn
+          Port: 9000
 
   # ── Queue Worker Service (internal, no ALB, no inbound) ──────────────────────
   QueueECSService:
