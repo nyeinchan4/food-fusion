@@ -1,0 +1,130 @@
+# .github/workflows/deploy-backend.yml
+# Builds the Laravel PHP-FPM backend Docker image, pushes to ECR, and
+# triggers rolling ECS deploys for both the backend service and queue worker.
+# Authentication uses OIDC (no long-lived AWS credentials stored as secrets).
+
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only run when backend-related files change
+      - 'app/**'
+      - 'bootstrap/**'
+      - 'config/**'
+      - 'database/**'
+      - 'routes/**'
+      - 'storage/**'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'artisan'
+      - 'Dockerfile.backend'
+      - '.github/workflows/deploy-backend.yml'
+
+  # Allow manual trigger from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # required for OIDC token request
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REPO_NAME: food-fusion-backend
+  ECS_CLUSTER: prod-food-fusion-cluster           # update if your cluster name differs
+  BACKEND_SERVICE: prod-food-fusion-backend-svc   # backend ECS service name
+  QUEUE_SERVICE: prod-food-fusion-queue-svc       # queue worker ECS service name
+  BACKEND_CONTAINER: prod-food-fusion-backend     # must match task def container name
+  QUEUE_CONTAINER: prod-food-fusion-queue         # must match task def container name
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Backend + Queue
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Configure AWS credentials via OIDC ───────────────────────────────
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── 3. Log in to Amazon ECR ─────────────────────────────────────────────
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── 4. Build, tag, and push Docker image ────────────────────────────────
+      - name: Build and push backend image
+        id: build-image
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_URI="$REGISTRY/$ECR_REPO_NAME"
+
+          echo "Building image: $IMAGE_URI:$IMAGE_TAG"
+          docker build \
+            -f Dockerfile.backend \
+            -t "$IMAGE_URI:$IMAGE_TAG" \
+            -t "$IMAGE_URI:latest" \
+            .
+
+          docker push "$IMAGE_URI:$IMAGE_TAG"
+          docker push "$IMAGE_URI:latest"
+
+          echo "image=$IMAGE_URI:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+      # ── 5a. Deploy backend service ───────────────────────────────────────────
+      - name: Download backend task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$BACKEND_SERVICE" \
+            --query taskDefinition \
+            --output json > backend-task-def.json
+
+      - name: Render backend task definition
+        id: render-backend
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: backend-task-def.json
+          container-name: ${{ env.BACKEND_CONTAINER }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy backend to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-backend.outputs.task-definition }}
+          service: ${{ env.BACKEND_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      # ── 5b. Deploy queue worker (same image, separate service) ───────────────
+      - name: Download queue task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$QUEUE_SERVICE" \
+            --query taskDefinition \
+            --output json > queue-task-def.json
+
+      - name: Render queue task definition
+        id: render-queue
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: queue-task-def.json
+          container-name: ${{ env.QUEUE_CONTAINER }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy queue worker to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-queue.outputs.task-definition }}
+          service: ${{ env.QUEUE_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true

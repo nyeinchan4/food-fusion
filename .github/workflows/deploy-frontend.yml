@@ -1,0 +1,102 @@
+# .github/workflows/deploy-frontend.yml
+# Builds the Nginx + Vite frontend Docker image, pushes to ECR,
+# and triggers a rolling ECS deploy — triggered on every push to main.
+# Authentication uses OIDC (no long-lived AWS credentials stored as secrets).
+
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only run when frontend-related files change
+      - 'resources/**'
+      - 'public/**'
+      - 'vite.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile.frontend'
+      - '.github/workflows/deploy-frontend.yml'
+
+  # Allow manual trigger from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # required for OIDC token request
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REPO_NAME: food-fusion-frontend
+  ECS_CLUSTER: prod-food-fusion-cluster          # update if your cluster name differs
+  ECS_SERVICE: prod-food-fusion-frontend-svc     # update if your service name differs
+  CONTAINER_NAME: prod-food-fusion-frontend      # must match task definition container name
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Configure AWS credentials via OIDC ───────────────────────────────
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── 3. Log in to Amazon ECR ─────────────────────────────────────────────
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── 4. Build, tag, and push Docker image ────────────────────────────────
+      - name: Build and push frontend image
+        id: build-image
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_URI="$REGISTRY/$ECR_REPO_NAME"
+
+          echo "Building image: $IMAGE_URI:$IMAGE_TAG"
+          docker build \
+            -f Dockerfile.frontend \
+            -t "$IMAGE_URI:$IMAGE_TAG" \
+            -t "$IMAGE_URI:latest" \
+            .
+
+          docker push "$IMAGE_URI:$IMAGE_TAG"
+          docker push "$IMAGE_URI:latest"
+
+          echo "image=$IMAGE_URI:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+      # ── 5. Download current ECS task definition ──────────────────────────────
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$ECS_SERVICE" \
+            --query taskDefinition \
+            --output json > task-def.json
+
+      # ── 6. Update the container image in the task definition ─────────────────
+      - name: Render new task definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      # ── 7. Deploy to ECS (rolling update) ────────────────────────────────────
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true

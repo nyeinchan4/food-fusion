@@ -2,8 +2,8 @@ Description: |
   Food-Fusion infrastructure — VPC with public/private subnets across two AZs,
   NAT Gateway, RDS MySQL in private subnet, ECS Fargate cluster with three services:
   frontend (Nginx), backend (Laravel PHP-FPM), and queue worker (Laravel queue:work).
-  Includes a full AWS CodePipeline CI/CD pipeline sourced from GitHub via CodeStar
-  Connections, with CodeBuild projects for Docker image builds and ECS rolling deploys.
+  ECR repositories for container images. No CI/CD pipeline resources (CodePipeline /
+  CodeBuild) are included — deployments are handled externally (e.g. GitHub Actions).
 
 Parameters:
   EnvironmentName:
@@ -114,32 +114,7 @@ Parameters:
     Type: String
     Default: /food-fusion/prod/app/key
 
-  # ── CI/CD — GitHub & CodePipeline ────────────────────────────────────────────
-  GitHubOwner:
-    Description: GitHub repository owner (username or organisation)
-    Type: String
-    Default: nyeinchan4
-
-  GitHubRepo:
-    Description: GitHub repository name (without owner prefix)
-    Type: String
-    Default: food-fusion
-
-  GitHubBranch:
-    Description: Branch to trigger the pipeline on
-    Type: String
-    Default: main
-
-  # NOTE: Create the CodeStar Connection in the AWS Console (Developer Tools →
-  # Settings → Connections), install the GitHub app, then paste the ARN below.
-  # It must be in "Available" state before the pipeline runs.
-  CodeStarConnectionArn:
-    Description: |
-      ARN of the AWS CodeStar Connection to GitHub.
-      Create one at: AWS Console → Developer Tools → Settings → Connections
-    Type: String
-    Default: arn:aws:codeconnections:eu-north-1:293406303338:connection/6756251a-bdf8-4cb7-afc9-d33779b725a6
-
+  # ── ECR Repository Names ──────────────────────────────────────────────────────
   FrontendECRRepoName:
     Description: ECR repository name for the frontend image
     Type: String
@@ -149,6 +124,24 @@ Parameters:
     Description: ECR repository name for the backend image
     Type: String
     Default: food-fusion-backend
+
+  # ── GitHub Actions OIDC ────────────────────────────────────────────────────
+  GitHubOrg:
+    Description: GitHub organisation or user that owns the repository (e.g. nyeinchan4)
+    Type: String
+    Default: nyeinchan4
+
+  GitHubRepo:
+    Description: GitHub repository name (without owner prefix, e.g. food-fusion)
+    Type: String
+    Default: food-fusion
+
+  GitHubBranch:
+    Description: |
+      Branch allowed to assume the deploy role. Use '*' to allow all branches
+      (not recommended for production).
+    Type: String
+    Default: main
 
   # ── Domain ────────────────────────────────────────────────────────────────────
   DomainName:
@@ -1009,77 +1002,63 @@ Resources:
           Value: !Sub "${EnvironmentName}-${ProjectName}-backend-ecr"
 
   # ════════════════════════════════════════════════════════════════════════════════
-  # CI/CD — S3 ARTIFACT BUCKET
+  # GITHUB ACTIONS — OIDC PROVIDER & DEPLOY ROLE
+  # Allows GitHub Actions to authenticate via OIDC (no long-lived AWS keys needed).
+  # The deploy role is scoped to pushes from the configured repo/branch only.
   # ════════════════════════════════════════════════════════════════════════════════
 
-  PipelineArtifactBucket:
-    Type: AWS::S3::Bucket
+  # GitHub's OIDC IdP — one per AWS account (use Condition to avoid duplicate if
+  # another stack already created it; safe to create once and share).
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
     Properties:
-      BucketName: !Sub "${EnvironmentName}-${ProjectName}-pipeline-artifacts-${AWS::AccountId}"
-      VersioningConfiguration:
-        Status: Enabled
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      LifecycleConfiguration:
-        Rules:
-          - Id: ExpireOldArtifacts
-            Status: Enabled
-            ExpirationInDays: 30
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      # GitHub's OIDC thumbprint (stable, provided by GitHub docs)
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
       Tags:
         - Key: Name
-          Value: !Sub "${EnvironmentName}-${ProjectName}-pipeline-artifacts"
+          Value: !Sub "${EnvironmentName}-${ProjectName}-github-oidc"
 
-  # ════════════════════════════════════════════════════════════════════════════════
-  # CI/CD — IAM ROLES
-  # ════════════════════════════════════════════════════════════════════════════════
-
-  # Role used by all CodeBuild projects
-  CodeBuildServiceRole:
+  # ── GitHub Actions Deploy Role ──────────────────────────────────────────────
+  # Trust policy: only the configured repo + branch may assume this role.
+  # Permissions: ECR image push (frontend & backend repos) + ECS rolling deploy.
+  GitHubActionsDeployRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${EnvironmentName}-${ProjectName}-codebuild-role"
+      RoleName: !Sub "${EnvironmentName}-${ProjectName}-github-deploy-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
-              Service: codebuild.amazonaws.com
-            Action: sts:AssumeRole
+              Federated: !GetAtt GitHubOIDCProvider.Arn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                # Only the configured GitHub org/repo may assume this role
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                # Allow the specified branch (and workflow-triggered environments)
+                token.actions.githubusercontent.com:sub:
+                  !Sub "repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/${GitHubBranch}"
       Policies:
-        - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-codebuild-policy"
+        - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-github-deploy-policy"
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              # CloudWatch Logs — write build logs
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
-              # S3 — read/write pipeline artifacts
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-                  - s3:PutObject
-                  - s3:GetBucketVersioning
-                Resource:
-                  - !GetAtt PipelineArtifactBucket.Arn
-                  - !Sub "${PipelineArtifactBucket.Arn}/*"
-              # ECR — push images
-              - Effect: Allow
-                Action:
-                  - ecr:GetAuthorizationToken
-                Resource: "*"
-              - Effect: Allow
+
+              # ── ECR: authenticate and push images ──────────────────────────
+              - Sid: ECRGetAuthToken
+                Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: "*"   # GetAuthorizationToken is account-level, no resource ARN
+
+              - Sid: ECRPushImages
+                Effect: Allow
                 Action:
                   - ecr:BatchCheckLayerAvailability
                   - ecr:CompleteLayerUpload
@@ -1091,277 +1070,39 @@ Resources:
                 Resource:
                   - !GetAtt FrontendECRRepository.Arn
                   - !GetAtt BackendECRRepository.Arn
-              # CodeBuild — report groups (optional but useful)
-              - Effect: Allow
-                Action:
-                  - codebuild:CreateReportGroup
-                  - codebuild:CreateReport
-                  - codebuild:UpdateReport
-                  - codebuild:BatchPutTestCases
-                Resource: !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*"
 
-  # Role used by CodePipeline
-  CodePipelineServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${EnvironmentName}-${ProjectName}-codepipeline-role"
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codepipeline.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-codepipeline-policy"
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              # CodeStar Connection — use GitHub source
-              - Effect: Allow
+              # ── ECS: rolling deploy (register task def + update service) ──────
+              - Sid: ECSRegisterTaskDef
+                Effect: Allow
                 Action:
-                  - codestar-connections:UseConnection
-                Resource: !Ref CodeStarConnectionArn
-              # S3 — artifact store
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-                  - s3:PutObject
-                  - s3:GetBucketVersioning
-                  - s3:ListBucket
-                Resource:
-                  - !GetAtt PipelineArtifactBucket.Arn
-                  - !Sub "${PipelineArtifactBucket.Arn}/*"
-              # CodeBuild — start/check builds
-              - Effect: Allow
-                Action:
-                  - codebuild:BatchGetBuilds
-                  - codebuild:StartBuild
-                  - codebuild:StopBuild
-                Resource:
-                  - !GetAtt FrontendCodeBuildProject.Arn
-                  - !GetAtt BackendCodeBuildProject.Arn
-              # ECS — rolling deploy (update service image)
-              - Effect: Allow
-                Action:
-                  - ecs:DescribeServices
+                  - ecs:RegisterTaskDefinition
                   - ecs:DescribeTaskDefinition
+                Resource: "*"   # RegisterTaskDefinition has no resource-level restriction
+
+              - Sid: ECSUpdateService
+                Effect: Allow
+                Action:
+                  - ecs:UpdateService
+                  - ecs:DescribeServices
                   - ecs:DescribeTasks
                   - ecs:ListTasks
-                  - ecs:RegisterTaskDefinition
-                  - ecs:UpdateService
-                Resource: "*"
-              # IAM — pass roles to ECS during task-def registration
-              - Effect: Allow
-                Action:
-                  - iam:PassRole
+                Resource:
+                  - !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ECSCluster}"
+                  - !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${ECSCluster}/${EnvironmentName}-${ProjectName}-frontend-svc"
+                  - !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${ECSCluster}/${EnvironmentName}-${ProjectName}-backend-svc"
+                  - !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${ECSCluster}/${EnvironmentName}-${ProjectName}-queue-svc"
+
+              # ── IAM: pass execution + task roles to ECS when registering task defs ─
+              - Sid: PassECSRoles
+                Effect: Allow
+                Action: iam:PassRole
                 Resource:
                   - !GetAtt CustomECSExecutionRole.Arn
                   - !GetAtt ECSTaskRole.Arn
-              # CloudWatch Events (EventBridge) — used internally by pipeline
-              - Effect: Allow
-                Action:
-                  - events:PutEvents
-                Resource: "*"
-
-  # ════════════════════════════════════════════════════════════════════════════════
-  # CI/CD — CODEBUILD PROJECTS
-  # ════════════════════════════════════════════════════════════════════════════════
-
-  # CodeBuild project — builds the frontend Docker image and pushes to ECR
-  FrontendCodeBuildProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: !Sub "${EnvironmentName}-${ProjectName}-frontend-build"
-      Description: Builds the Nginx + Vite frontend image and pushes to ECR
-      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
-      Artifacts:
-        Type: CODEPIPELINE
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:7.0
-        PrivilegedMode: true    # required to run Docker daemon inside CodeBuild
-        EnvironmentVariables:
-          - Name: AWS_DEFAULT_REGION
-            Value: !Ref AWS::Region
-          - Name: AWS_ACCOUNT_ID
-            Value: !Ref AWS::AccountId
-          - Name: ECR_REPO_URI
-            Value: !GetAtt FrontendECRRepository.RepositoryUri
-          - Name: IMAGE_TAG
-            Value: latest
-          # Full container name must match the task definition ContainerDefinition name
-          - Name: CONTAINER_NAME
-            Value: !Sub "${EnvironmentName}-${ProjectName}-frontend"
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: buildspec-frontend.yml
-      LogsConfig:
-        CloudWatchLogs:
-          Status: ENABLED
-          GroupName: !Sub "/codebuild/${EnvironmentName}-${ProjectName}-frontend-build"
       Tags:
         - Key: Name
-          Value: !Sub "${EnvironmentName}-${ProjectName}-frontend-build"
+          Value: !Sub "${EnvironmentName}-${ProjectName}-github-deploy-role"
 
-  # CodeBuild project — builds the backend PHP-FPM image and pushes to ECR
-  BackendCodeBuildProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: !Sub "${EnvironmentName}-${ProjectName}-backend-build"
-      Description: Builds the Laravel PHP-FPM backend image and pushes to ECR
-      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
-      Artifacts:
-        Type: CODEPIPELINE
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:7.0
-        PrivilegedMode: true    # required to run Docker daemon inside CodeBuild
-        EnvironmentVariables:
-          - Name: AWS_DEFAULT_REGION
-            Value: !Ref AWS::Region
-          - Name: AWS_ACCOUNT_ID
-            Value: !Ref AWS::AccountId
-          - Name: ECR_REPO_URI
-            Value: !GetAtt BackendECRRepository.RepositoryUri
-          - Name: IMAGE_TAG
-            Value: latest
-          # Full container name must match the task definition ContainerDefinition name
-          - Name: CONTAINER_NAME
-            Value: !Sub "${EnvironmentName}-${ProjectName}-backend"
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: buildspec-backend.yml
-      LogsConfig:
-        CloudWatchLogs:
-          Status: ENABLED
-          GroupName: !Sub "/codebuild/${EnvironmentName}-${ProjectName}-backend-build"
-      Tags:
-        - Key: Name
-          Value: !Sub "${EnvironmentName}-${ProjectName}-backend-build"
-
-  # ════════════════════════════════════════════════════════════════════════════════
-  # CI/CD — CODEPIPELINE
-  # ════════════════════════════════════════════════════════════════════════════════
-
-  FoodFusionPipeline:
-    Type: AWS::CodePipeline::Pipeline
-    Properties:
-      Name: !Sub "${EnvironmentName}-${ProjectName}-pipeline"
-      RoleArn: !GetAtt CodePipelineServiceRole.Arn
-      ArtifactStore:
-        Type: S3
-        Location: !Ref PipelineArtifactBucket
-      RestartExecutionOnUpdate: true
-      Stages:
-
-        # ── Stage 1: Source — pull from GitHub via CodeStar Connection ────────
-        - Name: Source
-          Actions:
-            - Name: GitHub_Source
-              ActionTypeId:
-                Category: Source
-                Owner: AWS
-                Provider: CodeStarSourceConnection
-                Version: '1'
-              Configuration:
-                ConnectionArn: !Ref CodeStarConnectionArn
-                FullRepositoryId: !Sub "${GitHubOwner}/${GitHubRepo}"
-                BranchName: !Ref GitHubBranch
-                OutputArtifactFormat: CODE_ZIP
-                DetectChanges: true
-              OutputArtifacts:
-                - Name: SourceOutput
-              RunOrder: 1
-
-        # ── Stage 2: Build — run both CodeBuild projects in parallel ──────────
-        - Name: Build
-          Actions:
-            - Name: Build_Frontend
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: '1'
-              Configuration:
-                ProjectName: !Ref FrontendCodeBuildProject
-              InputArtifacts:
-                - Name: SourceOutput
-              OutputArtifacts:
-                - Name: FrontendBuildOutput
-              RunOrder: 1
-
-            - Name: Build_Backend
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: '1'
-              Configuration:
-                ProjectName: !Ref BackendCodeBuildProject
-              InputArtifacts:
-                - Name: SourceOutput
-              OutputArtifacts:
-                - Name: BackendBuildOutput
-              RunOrder: 1
-
-        # ── Stage 3: Deploy — rolling update of ECS services ──────────────────
-        - Name: Deploy
-          Actions:
-            - Name: Deploy_Frontend
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: ECS
-                Version: '1'
-              Configuration:
-                ClusterName: !Ref ECSCluster
-                ServiceName: !Sub "${EnvironmentName}-${ProjectName}-frontend-svc"
-                FileName: imagedefinitions.json
-              InputArtifacts:
-                - Name: FrontendBuildOutput
-              RunOrder: 1
-
-            - Name: Deploy_Backend
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: ECS
-                Version: '1'
-              Configuration:
-                ClusterName: !Ref ECSCluster
-                ServiceName: !Sub "${EnvironmentName}-${ProjectName}-backend-svc"
-                FileName: imagedefinitions.json
-              InputArtifacts:
-                - Name: BackendBuildOutput
-              RunOrder: 1
-
-            # Queue worker uses the same image as the backend.
-            # Re-deploy it after backend so the new image is guaranteed to be available.
-            - Name: Deploy_Queue
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: ECS
-                Version: '1'
-              Configuration:
-                ClusterName: !Ref ECSCluster
-                ServiceName: !Sub "${EnvironmentName}-${ProjectName}-queue-svc"
-                FileName: imagedefinitions.json
-              InputArtifacts:
-                - Name: BackendBuildOutput
-              RunOrder: 2
-
-      Tags:
-        - Key: Name
-          Value: !Sub "${EnvironmentName}-${ProjectName}-pipeline"
-
-# ══════════════════════════════════════════════════════════════════════════════════
-# OUTPUTS
-# ══════════════════════════════════════════════════════════════════════════════════
 Outputs:
   VPC:
     Description: ID of the created VPC
@@ -1431,16 +1172,17 @@ Outputs:
     Export:
       Name: !Sub "${EnvironmentName}-${ProjectName}-BackendECRUri"
 
-  PipelineArtifactBucketName:
-    Description: S3 bucket used by CodePipeline for build artifacts
-    Value: !Ref PipelineArtifactBucket
-
-  CodePipelineUrl:
-    Description: AWS Console URL of the CI/CD pipeline
-    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codepipeline/pipelines/${FoodFusionPipeline}/view"
-
   DataSubnets:
     Description: Comma-separated list of isolated data subnets (RDS tier)
     Value: !Join [ ",", [ !Ref DataSubnet1, !Ref DataSubnet2 ]]
     Export:
       Name: !Sub "${EnvironmentName}-${ProjectName}-DataSubnets"
+
+  GitHubActionsDeployRoleArn:
+    Description: |
+      ARN of the IAM role GitHub Actions assumes via OIDC to push images to ECR
+      and deploy to ECS. Add this value as the AWS_ROLE_TO_ASSUME secret in your
+      GitHub repository settings.
+    Value: !GetAtt GitHubActionsDeployRole.Arn
+    Export:
+      Name: !Sub "${EnvironmentName}-${ProjectName}-GHDeployRoleArn"
