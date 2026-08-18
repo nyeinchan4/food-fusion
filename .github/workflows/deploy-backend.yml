@@ -52,9 +52,8 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.GitHubActionsDeployRoleArn }}
+          role-to-assume: arn:aws:iam::293406303338:role/prod-food-fusion-github-deploy-role
           aws-region: ${{ env.AWS_REGION }}
-          audience: sts.amazonaws.com
 
       # ── 3. Log in to Amazon ECR ─────────────────────────────────────────────
       - name: Log in to Amazon ECR
