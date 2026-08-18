@@ -1042,11 +1042,13 @@ Resources:
                 # Only tokens issued for this AWS account's STS audience are accepted
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                # GitHub appends numeric user/repo IDs to sub-claim:
-                # e.g. repo:nyeinchan4@117419928/food-fusion@1320001746:ref:refs/heads/main
-                # Use wildcard to match regardless of the numeric suffix.
+                # GitHub sends different sub-claim formats depending on the job context:
+                #   branch push:          repo:ORG@ID/REPO@ID:ref:refs/heads/BRANCH
+                #   environment deploy:   repo:ORG@ID/REPO@ID:environment:ENV_NAME
+                # Wildcards cover the numeric @ID suffixes GitHub appends to names.
                 token.actions.githubusercontent.com:sub:
-                  !Sub "repo:${GitHubOrg}*/${GitHubRepo}*:ref:refs/heads/${GitHubBranch}"
+                  - !Sub "repo:${GitHubOrg}*/${GitHubRepo}*:ref:refs/heads/${GitHubBranch}"
+                  - !Sub "repo:${GitHubOrg}*/${GitHubRepo}*:environment:prod"
       Policies:
         - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-github-deploy-policy"
           PolicyDocument:
