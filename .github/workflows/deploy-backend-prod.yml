@@ -20,7 +20,7 @@ on:
       - 'composer.lock'
       - 'artisan'
       - 'Dockerfile.backend'
-      - '.github/workflows/deploy-backend.yml'
+      - '.github/workflows/deploy-backend-prod.yml'
 
   # Allow manual trigger from the Actions tab
   workflow_dispatch:

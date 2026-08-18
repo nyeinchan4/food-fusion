@@ -16,7 +16,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'Dockerfile.frontend'
-      - '.github/workflows/deploy-frontend.yml'
+      - '.github/workflows/deploy-frontend-prod.yml'
 
   # Allow manual trigger from the Actions tab
   workflow_dispatch:
