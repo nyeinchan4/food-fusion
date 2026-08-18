@@ -32,16 +32,19 @@ permissions:
 env:
   AWS_REGION: ap-southeast-1
   ECR_REPO_NAME: food-fusion-backend
-  ECS_CLUSTER: prod-food-fusion-cluster           # update if your cluster name differs
-  BACKEND_SERVICE: prod-food-fusion-backend-svc   # backend ECS service name
-  QUEUE_SERVICE: prod-food-fusion-queue-svc       # queue worker ECS service name
-  BACKEND_CONTAINER: prod-food-fusion-backend     # must match task def container name
-  QUEUE_CONTAINER: prod-food-fusion-queue         # must match task def container name
+  ECS_CLUSTER: prod-food-fusion-ecs-cluster
+  BACKEND_SERVICE: prod-food-fusion-backend-svc
+  QUEUE_SERVICE: prod-food-fusion-queue-svc
+  BACKEND_TASK_DEF: prod-food-fusion-backend-task
+  QUEUE_TASK_DEF: prod-food-fusion-queue-task
+  BACKEND_CONTAINER: prod-food-fusion-backend
+  QUEUE_CONTAINER: prod-food-fusion-queue
 
 jobs:
   build-and-deploy:
     name: Build & Deploy Backend + Queue
     runs-on: ubuntu-latest
+    environment: prod
 
     steps:
       # ── 1. Checkout ─────────────────────────────────────────────────────────
@@ -52,7 +55,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::293406303338:role/prod-food-fusion-github-deploy-role
+          role-to-assume: ${{ secrets.GitHubActionsDeployRoleArn }}
           aws-region: ${{ env.AWS_REGION }}
 
       # ── 3. Log in to Amazon ECR ─────────────────────────────────────────────
@@ -85,7 +88,7 @@ jobs:
       - name: Download backend task definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition "$BACKEND_SERVICE" \
+            --task-definition "$BACKEND_TASK_DEF" \
             --query taskDefinition \
             --output json > backend-task-def.json
 
@@ -109,7 +112,7 @@ jobs:
       - name: Download queue task definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition "$QUEUE_SERVICE" \
+            --task-definition "$QUEUE_TASK_DEF" \
             --query taskDefinition \
             --output json > queue-task-def.json
 
