@@ -1042,10 +1042,11 @@ Resources:
                 # Only tokens issued for this AWS account's STS audience are accepted
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                # Allow any ref (branch, tag, PR) from the configured repo.
-                # The aud check above already restricts to this account.
+                # GitHub appends numeric user/repo IDs to sub-claim:
+                # e.g. repo:nyeinchan4@117419928/food-fusion@1320001746:ref:refs/heads/main
+                # Use wildcard to match regardless of the numeric suffix.
                 token.actions.githubusercontent.com:sub:
-                  !Sub "repo:${GitHubOrg}/${GitHubRepo}:*"
+                  !Sub "repo:${GitHubOrg}*/${GitHubRepo}*:ref:refs/heads/${GitHubBranch}"
       Policies:
         - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-github-deploy-policy"
           PolicyDocument:

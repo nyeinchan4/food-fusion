@@ -42,13 +42,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── DEBUG: print the OIDC sub-claim so we can verify it matches the trust policy
-      - name: Debug OIDC token sub-claim
-        run: |
-          echo "GitHub repo: ${{ github.repository }}"
-          echo "GitHub ref:  ${{ github.ref }}"
-          echo "Expected sub: repo:${{ github.repository }}:${{ github.ref }}"
-
       # ── 2. Configure AWS credentials via OIDC ───────────────────────────────
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
