@@ -1,15 +1,15 @@
-# .github/workflows/deploy-backend.yml
-# Builds the Laravel PHP-FPM backend Docker image, pushes to ECR, and
-# triggers rolling ECS deploys for both the backend service and queue worker.
-# Authentication uses OIDC (no long-lived AWS credentials stored as secrets).
+# .github/workflows/deploy-backend-prod.yml
+# Two-stage pipeline for the Laravel PHP-FPM backend:
+#   build  — builds the Docker image and pushes to ECR
+#   deploy — deploys the new image to both the backend service and queue worker
+# Authentication uses OIDC (no long-lived AWS credentials).
 
-name: Deploy Backend
+name: Deploy Backend [prod]
 
 on:
   push:
     branches: [main]
     paths:
-      # Only run when backend-related files change
       - 'app/**'
       - 'bootstrap/**'
       - 'config/**'
@@ -22,48 +22,41 @@ on:
       - 'Dockerfile.backend'
       - '.github/workflows/deploy-backend-prod.yml'
 
-  # Allow manual trigger from the Actions tab
   workflow_dispatch:
 
 permissions:
-  id-token: write   # required for OIDC token request
-  contents: read
+  id-token: write   # Required for requesting the JWT
+  contents: read    # Required for actions/checkout
 
 env:
   AWS_REGION: ap-southeast-1
   ECR_REPO_NAME: food-fusion-backend
-  ECS_CLUSTER: prod-food-fusion-ecs-cluster
-  BACKEND_SERVICE: prod-food-fusion-backend-svc
-  QUEUE_SERVICE: prod-food-fusion-queue-svc
-  BACKEND_TASK_DEF: prod-food-fusion-backend-task
-  QUEUE_TASK_DEF: prod-food-fusion-queue-task
-  BACKEND_CONTAINER: prod-food-fusion-backend
-  QUEUE_CONTAINER: prod-food-fusion-queue
 
+# ══════════════════════════════════════════════════════════════════════════════
 jobs:
-  build-and-deploy:
-    name: Build & Deploy Backend + Queue
+
+  # ── Stage 1: Build & Push ──────────────────────────────────────────────────
+  build:
+    name: Build & Push Image
     runs-on: ubuntu-latest
-    environment: prod
+
+    outputs:
+      image: ${{ steps.build-image.outputs.image }}
 
     steps:
-      # ── 1. Checkout ─────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Configure AWS credentials via OIDC ───────────────────────────────
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.GitHubActionsDeployRoleArn }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # ── 3. Log in to Amazon ECR ─────────────────────────────────────────────
       - name: Log in to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      # ── 4. Build, tag, and push Docker image ────────────────────────────────
       - name: Build and push backend image
         id: build-image
         env:
@@ -84,7 +77,30 @@ jobs:
 
           echo "image=$IMAGE_URI:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
-      # ── 5a. Deploy backend service ───────────────────────────────────────────
+  # ── Stage 2: Deploy to ECS ─────────────────────────────────────────────────
+  deploy:
+    name: Deploy to ECS [prod]
+    runs-on: ubuntu-latest
+    environment: prod
+    needs: build
+
+    env:
+      ECS_CLUSTER: prod-food-fusion-ecs-cluster
+      BACKEND_SERVICE: prod-food-fusion-backend-svc
+      QUEUE_SERVICE: prod-food-fusion-queue-svc
+      BACKEND_TASK_DEF: prod-food-fusion-backend-task
+      QUEUE_TASK_DEF: prod-food-fusion-queue-task
+      BACKEND_CONTAINER: prod-food-fusion-backend
+      QUEUE_CONTAINER: prod-food-fusion-queue
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GitHubActionsDeployRoleArn }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── Backend service ──────────────────────────────────────────────────────
       - name: Download backend task definition
         run: |
           aws ecs describe-task-definition \
@@ -92,15 +108,15 @@ jobs:
             --query taskDefinition \
             --output json > backend-task-def.json
 
-      - name: Render backend task definition
+      - name: Render backend task definition with updated image
         id: render-backend
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: backend-task-def.json
           container-name: ${{ env.BACKEND_CONTAINER }}
-          image: ${{ steps.build-image.outputs.image }}
+          image: ${{ needs.build.outputs.image }}
 
-      - name: Deploy backend to ECS
+      - name: Deploy backend service (rolling update)
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.render-backend.outputs.task-definition }}
@@ -108,7 +124,7 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
-      # ── 5b. Deploy queue worker (same image, separate service) ───────────────
+      # ── Queue worker (same image, separate service) ──────────────────────────
       - name: Download queue task definition
         run: |
           aws ecs describe-task-definition \
@@ -116,15 +132,15 @@ jobs:
             --query taskDefinition \
             --output json > queue-task-def.json
 
-      - name: Render queue task definition
+      - name: Render queue task definition with updated image
         id: render-queue
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: queue-task-def.json
           container-name: ${{ env.QUEUE_CONTAINER }}
-          image: ${{ steps.build-image.outputs.image }}
+          image: ${{ needs.build.outputs.image }}
 
-      - name: Deploy queue worker to ECS
+      - name: Deploy queue worker (rolling update)
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.render-queue.outputs.task-definition }}
