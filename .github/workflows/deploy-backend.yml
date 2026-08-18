@@ -26,17 +26,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write   # Required for requesting the JWT
-  contents: read    # Required for actions/checkout
+  id-token: write   # required for OIDC token request
+  contents: read
 
 env:
   AWS_REGION: ap-southeast-1
   ECR_REPO_NAME: food-fusion-backend
-  ECS_CLUSTER: prod-food-fusion-ecs-cluster
-  BACKEND_SERVICE: prod-food-fusion-backend-svc
-  QUEUE_SERVICE: prod-food-fusion-queue-svc
-  BACKEND_CONTAINER: prod-food-fusion-backend
-  QUEUE_CONTAINER: prod-food-fusion-queue
+  ECS_CLUSTER: prod-food-fusion-cluster           # update if your cluster name differs
+  BACKEND_SERVICE: prod-food-fusion-backend-svc   # backend ECS service name
+  QUEUE_SERVICE: prod-food-fusion-queue-svc       # queue worker ECS service name
+  BACKEND_CONTAINER: prod-food-fusion-backend     # must match task def container name
+  QUEUE_CONTAINER: prod-food-fusion-queue         # must match task def container name
 
 jobs:
   build-and-deploy:
@@ -54,6 +54,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.GitHubActionsDeployRoleArn }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       # ── 3. Log in to Amazon ECR ─────────────────────────────────────────────
       - name: Log in to Amazon ECR
