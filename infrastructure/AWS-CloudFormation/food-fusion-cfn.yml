@@ -543,6 +543,7 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DBPasswordSSMPath}"
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AppKeySSMPath}"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BackendHostSSMPath}"
               # Allow KMS decryption for SecureString parameters encrypted with the default SSM key
               - Effect: Allow
                 Action:
