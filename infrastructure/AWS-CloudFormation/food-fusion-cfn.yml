@@ -950,7 +950,6 @@ Resources:
             - !Ref BackendTaskSecurityGroup
       ServiceRegistries:
         - RegistryArn: !GetAtt BackendServiceDiscovery.Arn
-          Port: 9000
 
   # ── Queue Worker Service (internal, no ALB, no inbound) ──────────────────────
   QueueECSService:
