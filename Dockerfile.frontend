@@ -26,10 +26,6 @@ COPY --from=builder /app/public /usr/share/nginx/html
 # Copy Nginx configuration
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Copy entrypoint script that substitutes ${BACKEND_HOST} before nginx starts.
-# Runs automatically because nginx image executes /docker-entrypoint.d/*.sh scripts.
-COPY docker/nginx/substitute-backend-host.sh /docker-entrypoint.d/25-substitute-backend-host.sh
-
 # Expose port 80
 EXPOSE 80
 
