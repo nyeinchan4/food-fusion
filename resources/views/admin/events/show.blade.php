@@ -54,7 +54,7 @@
         <div class="bg-base-100 rounded-box shadow-xl overflow-hidden">
             @if($event->image_path)
             <div class="w-full h-96 overflow-hidden">
-                <img src="{{ asset('storage/' . $event->image_path) }}" 
+                <img src="{{ storage_url($event->image_path) }}" 
                      alt="{{ $event->title }}" 
                      class="w-full h-full object-cover" />
             </div>

@@ -87,7 +87,7 @@
                     <div class="transform transition-transform duration-300 hover:scale-105 card bg-base-100 shadow-sm border border-base-200 cursor-pointer"
                         onclick="window.location='{{ route('recipes.show', $recipe) }}'">
                         <figure class="h-48 overflow-hidden">
-                            <img src="{{ $recipe->image_path ? asset('storage/' . $recipe->image_path) : asset('assets/images/recipe-placeholder.jpg') }}"
+                            <img src="{{ $recipe->image_path ? storage_url($recipe->image_path) : asset('assets/images/recipe-placeholder.jpg') }}"
                                 alt="{{ $recipe->title }}" class="w-full h-full object-cover" />
                         </figure>
                         <div class="card-body">

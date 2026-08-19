@@ -47,7 +47,7 @@
                             <td>
                                 <div class="avatar">
                                     <div class="mask mask-squircle w-12 h-12">
-                                        <img src="{{ $event->image_path ? asset('storage/' . $event->image_path) : 'https://img.daisyui.com/images/stock/photo-1609621838510-5ad474b7d25d.jpg' }}" 
+                                        <img src="{{ $event->image_path ? storage_url($event->image_path) : 'https://img.daisyui.com/images/stock/photo-1609621838510-5ad474b7d25d.jpg' }}" 
                                              alt="{{ $event->title }}" />
                                     </div>
                                 </div>

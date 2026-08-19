@@ -117,7 +117,7 @@
                     </label>
                     <div class="avatar">
                         <div class="w-48 rounded-lg">
-                            <img src="{{ asset('storage/' . $event->image_path) }}" alt="{{ $event->title }}" />
+                            <img src="{{ storage_url($event->image_path) }}" alt="{{ $event->title }}" />
                         </div>
                     </div>
                 </div>

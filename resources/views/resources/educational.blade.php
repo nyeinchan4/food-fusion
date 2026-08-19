@@ -282,6 +282,7 @@
 
 <script>
 function downloadResource(type, filePath = null, title = null) {
+    const storageBase = "{{ rtrim((string) storage_url('/'), '/') }}";
     // Show loading state
     const button = event.target;
     const originalText = button.innerHTML;
@@ -291,17 +292,17 @@ function downloadResource(type, filePath = null, title = null) {
     // Map placeholder types to actual resources
     const resourceMap = {
         'solar-energy': {
-            url: '/storage/resources/solar-installation-guide.pdf',
+            url: storageBase + '/resources/solar-installation-guide.pdf',
             filename: 'solar-installation-guide.pdf',
             title: 'Solar Installation Guide'
         },
         'wind-energy': {
-            url: '/storage/resources/how-wind-generate-power.mp4',
+            url: storageBase + '/resources/how-wind-generate-power.mp4',
             filename: 'how-wind-generate-power.mp4',
             title: 'How Wind Generate Power Tutorial'
         },
         'energy-storage': {
-            url: '/storage/resources/green-energy-infographic.png',
+            url: storageBase + '/resources/green-energy-infographic.png',
             filename: 'green-energy-infographic.png',
             title: 'Green Energy Infographic'
         }
@@ -312,7 +313,7 @@ function downloadResource(type, filePath = null, title = null) {
         if (filePath && title) {
             // For actual resources from database
             const link = document.createElement('a');
-            link.href = `/storage/${filePath}`;
+            link.href = `${storageBase}/${filePath}`;
             link.download = title;
             document.body.appendChild(link);
             link.click();

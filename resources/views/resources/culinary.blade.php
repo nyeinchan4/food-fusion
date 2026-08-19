@@ -282,6 +282,7 @@
 
 <script>
 function downloadResource(type, filePath = null, title = null) {
+    const storageBase = "{{ rtrim((string) storage_url('/'), '/') }}";
     // Show loading state
     const button = event.target;
     const originalText = button.innerHTML;
@@ -291,17 +292,17 @@ function downloadResource(type, filePath = null, title = null) {
     // Map placeholder types to actual resources
     const resourceMap = {
         'recipe-cards': {
-            url: '/storage/resources/essential-spices.jpg',
+            url: storageBase + '/resources/essential-spices.jpg',
             filename: 'essential-spices.jpg',
             title: 'Essential Spices Guide'
         },
         'cooking-tutorials': {
-            url: '/storage/resources/knife-mater-skill.mp4',
+            url: storageBase + '/resources/knife-mater-skill.mp4',
             filename: 'knife-mater-skill.mp4',
             title: 'Knife Master Skills Tutorial'
         },
         'kitchen-hacks': {
-            url: '/storage/resources/food-safety-checklist.pdf',
+            url: storageBase + '/resources/food-safety-checklist.pdf',
             filename: 'food-safety-checklist.pdf',
             title: 'Food Safety Checklist'
         }
@@ -312,7 +313,7 @@ function downloadResource(type, filePath = null, title = null) {
         if (filePath && title) {
             // For actual resources from database
             const link = document.createElement('a');
-            link.href = `/storage/${filePath}`;
+            link.href = `${storageBase}/${filePath}`;
             link.download = title;
             document.body.appendChild(link);
             link.click();

@@ -574,6 +574,21 @@ Resources:
                   - ssmmessages:OpenControlChannel
                   - ssmmessages:OpenDataChannel
                 Resource: "*"
+        - PolicyName: !Sub "${EnvironmentName}-${ProjectName}-s3-media-policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Read/write/delete user-uploaded images in the media bucket
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub "arn:aws:s3:::${MediaBucket}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${MediaBucket}"
 
   # ════════════════════════════════════════════════════════════════════════════════
   # CLOUDWATCH LOG GROUP
@@ -690,6 +705,14 @@ Resources:
               Value: database
             - Name: QUEUE_CONNECTION
               Value: database
+            - Name: FILESYSTEM_DISK
+              Value: s3
+            - Name: AWS_DEFAULT_REGION
+              Value: !Ref AWS::Region
+            - Name: AWS_BUCKET
+              Value: !Ref MediaBucket
+            - Name: AWS_URL
+              Value: !Sub "https://${MediaBucket}.s3.${AWS::Region}.amazonaws.com"
           # ECS fetches secrets from SSM at container startup — never stored in plain-text
           Secrets:
             - Name: APP_KEY
@@ -751,6 +774,14 @@ Resources:
               Value: database
             - Name: QUEUE_CONNECTION
               Value: database
+            - Name: FILESYSTEM_DISK
+              Value: s3
+            - Name: AWS_DEFAULT_REGION
+              Value: !Ref AWS::Region
+            - Name: AWS_BUCKET
+              Value: !Ref MediaBucket
+            - Name: AWS_URL
+              Value: !Sub "https://${MediaBucket}.s3.${AWS::Region}.amazonaws.com"
           # ECS fetches secrets from SSM at container startup — never stored in plain-text
           Secrets:
             - Name: APP_KEY
@@ -1040,6 +1071,58 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${EnvironmentName}-${ProjectName}-backend-ecr"
+
+  # ════════════════════════════════════════════════════════════════════════════════
+  # S3 MEDIA BUCKET — user-uploaded images (recipes, posts, events)
+  # ════════════════════════════════════════════════════════════════════════════════
+  # Public-read bucket used by the Laravel backend (FILESYSTEM_DISK=s3) to store
+  # and serve all uploaded images. Bucket policy allows anonymous GET so images
+  # can be referenced directly via https://<bucket>.s3.<region>.amazonaws.com/...
+  # Write access is restricted to the ECS task role (ECSTaskRole).
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub "${EnvironmentName}-${ProjectName}-media"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+            AllowedOrigins:
+              - "*"
+            MaxAge: 3000
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldMedia
+            Status: Enabled
+            ExpirationInDays: 3650
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-${ProjectName}-media"
+
+  MediaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MediaBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${MediaBucket}/*"
 
   # ════════════════════════════════════════════════════════════════════════════════
   # GITHUB ACTIONS — OIDC PROVIDER & DEPLOY ROLE

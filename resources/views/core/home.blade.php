@@ -39,7 +39,7 @@
             <div class="carousel w-full rounded-3xl shadow-2xl">
                 @foreach($events as $index => $event)
                 <div id="event-slide-{{ $index }}" class="carousel-item relative w-full">
-                    <div class="hero min-h-[400px] w-full" style="background-image: url({{ $event->image_path ? asset('storage/' . $event->image_path) : 'https://img.daisyui.com/images/stock/photo-1609621838510-5ad474b7d25d.jpg' }});">
+                    <div class="hero min-h-[400px] w-full" style="background-image: url({{ $event->image_path ? storage_url($event->image_path) : 'https://img.daisyui.com/images/stock/photo-1609621838510-5ad474b7d25d.jpg' }});">
                         <div class="hero-overlay bg-opacity-60"></div>
                         <div class="hero-content text-center text-neutral-content">
                             <div class="max-w-2xl">
@@ -128,7 +128,7 @@
                 <a href="{{ route('recipes.show', $recipe) }}" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow border border-base-200">
                     @if($recipe->image_path)
                     <figure class="h-48 overflow-hidden">
-                        <img src="{{ asset('storage/' . $recipe->image_path) }}" alt="{{ $recipe->title }}" class="w-full h-full object-cover" />
+                        <img src="{{ storage_url($recipe->image_path) }}" alt="{{ $recipe->title }}" class="w-full h-full object-cover" />
                     </figure>
                     @else
                     <figure class="h-48 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
@@ -210,7 +210,7 @@
                 @foreach($recentPosts as $post)
                 <a href="{{ route('posts.show', $post) }}" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow border border-base-200">
                     <figure class="h-48 overflow-hidden">
-                        <img src="{{ $post->image_path ? asset('storage/' . $post->image_path) : asset('assets/images/recipe-placeholder.jpg') }}" alt="{{ $post->title }}" class="w-full h-full object-cover" />
+                        <img src="{{ $post->image_path ? storage_url($post->image_path) : asset('assets/images/recipe-placeholder.jpg') }}" alt="{{ $post->title }}" class="w-full h-full object-cover" />
                     </figure>
                 
                     <div class="card-body">

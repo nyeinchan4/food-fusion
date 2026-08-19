@@ -37,14 +37,14 @@
                 <span>Curated by FoodFusion</span>
             </div>
             @if ($item->type === 'video')
-                <a href="{{ asset('storage/' . $item->file_path) }}" target="_blank" class="btn btn-{{ $color }} btn-sm gap-2">
+                <a href="{{ storage_url($item->file_path) }}" target="_blank" class="btn btn-{{ $color }} btn-sm gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />
                     </svg>
                     Watch now
                 </a>
             @else
-                <a href="{{ asset('storage/' . $item->file_path) }}" download class="btn btn-{{ $color }} btn-sm gap-2">
+                <a href="{{ storage_url($item->file_path) }}" download class="btn btn-{{ $color }} btn-sm gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>

@@ -9,7 +9,7 @@
             </a>
         </div>
         <div class="rounded-2xl overflow-hidden bg-base-200">
-            <img src="{{ $recipe->image_path ? asset('storage/' . $recipe->image_path) : asset('assets/images/recipe-placeholder.jpg') }}"
+            <img src="{{ $recipe->image_path ? storage_url($recipe->image_path) : asset('assets/images/recipe-placeholder.jpg') }}"
                 alt="{{ $recipe->title }}" class="w-full h-64 object-cover" />
         </div>
 
