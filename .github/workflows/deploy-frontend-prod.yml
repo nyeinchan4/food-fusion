@@ -16,6 +16,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'Dockerfile.frontend'
+      - 'docker/nginx/**'
       - '.github/workflows/deploy-frontend-prod.yml'
 
   workflow_dispatch:
