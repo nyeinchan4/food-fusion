@@ -113,6 +113,14 @@ Parameters:
       Then store it with: aws ssm put-parameter --name "/food-fusion/prod/app/key" --value "base64:..." --type SecureString
     Type: String
     Default: /food-fusion/prod/app/key
+
+  BackendHostSSMPath:
+    Description: |
+      SSM Parameter Store path for BACKEND_HOST — the Cloud Map DNS name of the
+      PHP-FPM backend (e.g. backend.food-fusion.local).
+      aws ssm put-parameter --name "/food-fusion/prod/backend-host" --value "backend.food-fusion.local" --type String
+    Type: String
+    Default: /food-fusion/prod/backend-host
   # ── ECR Repository Names ──────────────────────────────────────────────────────
   FrontendECRRepoName:
     Description: ECR repository name for the frontend image
@@ -623,6 +631,12 @@ Resources:
             - ContainerPort: 80
               HostPort: 80
               Protocol: tcp
+          Secrets:
+            # ECS injects BACKEND_HOST as a container env var from SSM.
+            # The Nginx template (/etc/nginx/templates/default.conf.template)
+            # substitutes ${BACKEND_HOST} via the built-in envsubst mechanism.
+            - Name: BACKEND_HOST
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BackendHostSSMPath}"
           LogConfiguration:
             LogDriver: awslogs
             Options:
