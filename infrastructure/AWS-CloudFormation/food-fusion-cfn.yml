@@ -114,6 +114,13 @@ Parameters:
     Type: String
     Default: /food-fusion/prod/app/key
 
+  BackendHostSSMPath:
+    Description: |
+      SSM Parameter Store path for the Nginx BACKEND_HOST (Cloud Map DNS name of the PHP-FPM service).
+      Store with: aws ssm put-parameter --name "/food-fusion/prod/backend-host" --value "backend.food-fusion.local" --type String
+    Type: String
+    Default: /food-fusion/prod/backend-host
+
   # ── ECR Repository Names ──────────────────────────────────────────────────────
   FrontendECRRepoName:
     Description: ECR repository name for the frontend image
@@ -624,11 +631,12 @@ Resources:
             - ContainerPort: 80
               HostPort: 80
               Protocol: tcp
-          Environment:
-            # BACKEND_HOST tells Nginx where to find PHP-FPM via Cloud Map DNS.
-            # Resolves to the backend task's private IP via the private namespace.
+          Secrets:
+            # BACKEND_HOST: Cloud Map DNS name of the PHP-FPM service.
+            # Store with: aws ssm put-parameter --name "/food-fusion/prod/backend-host"
+            #   --value "backend.food-fusion.local" --type String
             - Name: BACKEND_HOST
-              Value: !Sub "backend.${ProjectName}.local"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BackendHostSSMPath}"
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -661,6 +669,8 @@ Resources:
           Environment:
             - Name: APP_ENV
               Value: production
+            - Name: APP_URL
+              Value: !Sub "https://${DomainName}"
             - Name: APP_DEBUG
               Value: "false"
             - Name: DB_CONNECTION
