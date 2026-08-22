@@ -91,17 +91,17 @@ Parameters:
 
   # ── ECR Image URIs ────────────────────────────────────────────────────────────
   FrontendImageUri:
-    Description: ECR image URI for the frontend (Nginx + Vite assets)
+    Description: ECR image URI for the frontend (Nginx + Vite assets) Need to change after create ECR
     Type: String
     Default: "nginx:latest"
 
   BackendImageUri:
-    Description: ECR image URI for the backend (Laravel PHP-FPM)
+    Description: ECR image URI for the backend (Laravel PHP-FPM)  Need to change after create ECR
     Type: String
     Default: "php:8.4-fpm-alpine"
 
   QueueImageUri:
-    Description: ECR image URI for the queue worker (same backend image)
+    Description: ECR image URI for the queue worker (same backend image)  Need to change after create ECR
     Type: String
     Default: "php:8.4-fpm-alpine"
 
